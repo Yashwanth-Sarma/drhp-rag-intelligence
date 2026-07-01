@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # ── Paths ──────────────────────────────────────────────────────────────────
-BASE_DIR = Path(__file__).parent.parent
+BASE_DIR = Path(__file__).parent.parent.parent
 DATA_DIR = BASE_DIR / "data"
 RAW_PDFS_DIR = DATA_DIR / "raw_pdfs"
 PROCESSED_DIR = DATA_DIR / "processed"

@@ -24,7 +24,7 @@ import fitz  # PyMuPDF
 from langchain.schema import Document
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
-from src.config import (
+from src.configuration.config import (
     CHUNK_OVERLAP,
     CHUNK_SIZE,
     COMPANY_METADATA,
