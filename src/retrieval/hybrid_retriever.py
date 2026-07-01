@@ -297,4 +297,24 @@ class HybridRetriever:
                 "bm25_results": len(bm25_results),
                 "fused_results": len(fused_results),
                 "reranked": len(reranked),
-                "metadata_filter":
+                "metadata_filter": metadata_filter,
+            }
+        }
+
+
+if __name__ == "__main__":
+    retriever = HybridRetriever()
+    stats = retriever.store.get_collection_stats()
+    print(f"Collection: {stats['total_chunks']} chunks")
+
+    if stats["total_chunks"] > 0:
+        result = retriever.query(
+            question="What are the main risk factors for Zomato?",
+            companies=["Zomato"]
+        )
+        print(f"\nAnswer ({result['latency_ms']}ms):")
+        print(result["answer"][:500])
+        print(f"\nDebug: {result['retrieval_debug']}")
+        print(f"Citations: {len(result['citations'])}")
+    else:
+        print("No documents indexed yet.")

@@ -40,7 +40,7 @@ class VoyageEmbedder:
     """
 
     # Voyage AI free tier: 50M tokens. voyage-finance-2 max input: 32K tokens per request
-    MAX_BATCH_SIZE = 16    # chunks per API call — keeps request size manageable
+    MAX_BATCH_SIZE = 128    # chunks per API call — keeps request size manageable
     MAX_RETRIES = 3
     RETRY_DELAY_SECONDS = 2
 
@@ -92,7 +92,7 @@ class VoyageEmbedder:
 
             embeddings = self._embed_batch_with_retry(batch, batch_num, total_batches)
             all_embeddings.extend(embeddings)
-            time.sleep(20)  # stay under 3 RPM rate limit until payment method is added
+            time.sleep(0.1)  # Voyage AI recommendation — small pause between batches
 
         logger.info(
             f"Embedding complete",
