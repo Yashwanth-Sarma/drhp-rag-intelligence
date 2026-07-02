@@ -39,7 +39,100 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-
+def auto_detect_metadata(pdf_path: Path, sample_text: str) -> dict:
+    """
+    Auto-detect company name, document type, and year from PDF filename
+    and first few pages of content. Falls back gracefully if detection fails.
+    
+    This eliminates the need to rename PDFs to match COMPANY_METADATA keys.
+    Works on any DRHP or annual report regardless of how it was downloaded.
+    """
+    filename = pdf_path.stem.lower()
+    text_lower = sample_text.lower()[:3000]  # first 3000 chars sufficient
+    
+    # ── Company detection ──────────────────────────────────────────────────
+    company_patterns = {
+        "Zomato": ["zomato"],
+        "Paytm": ["paytm", "one97 communications", "one 97"],
+        "Ola Electric": ["ola electric", "ola mobility"],
+        "Swiggy": ["swiggy", "bundl technologies"],
+        "Nykaa": ["nykaa", "fsh limited", "fsn e-commerce"],
+        "Delhivery": ["delhivery"],
+        "PolicyBazaar": ["policybazaar", "pb fintech"],
+        "CarTrade": ["cartrade"],
+        "Freshworks": ["freshworks"],
+        "Nazara": ["nazara"],
+        "Mobikwik": ["mobikwik"],
+        "Boat": ["imagine marketing", "boat lifestyle"],
+    }
+    company_name = "Unknown"
+    for name, keywords in company_patterns.items():
+        if any(k in filename or k in text_lower for k in keywords):
+            company_name = name
+            break
+    
+    # ── Document type detection ────────────────────────────────────────────
+    doc_type = "Unknown"
+    if any(k in text_lower[:500] for k in ["draft red herring prospectus", "drhp"]):
+        doc_type = "DRHP"
+    elif any(k in text_lower[:500] for k in ["red herring prospectus", "rhp"]):
+        doc_type = "RHP"
+    elif any(k in text_lower[:500] for k in ["annual report", "annual accounts"]):
+        doc_type = "Annual_Report"
+    elif any(k in text_lower[:500] for k in ["quarterly results", "q1", "q2", "q3", "q4"]):
+        doc_type = "Quarterly_Report"
+    elif any(k in text_lower[:500] for k in ["earnings call", "conference call", "transcript"]):
+        doc_type = "Earnings_Transcript"
+    
+    # ── Year detection ─────────────────────────────────────────────────────
+    import re
+    year = "Unknown"
+    # Look for financial year pattern first (FY2024, FY 2024, F.Y. 2024)
+    fy_match = re.search(r'f\.?y\.?\s*(\d{4})', text_lower)
+    if fy_match:
+        year = f"FY{fy_match.group(1)}"
+    else:
+        # Fall back to calendar year in filename or text
+        year_match = re.search(r'20(1[5-9]|2[0-9])', filename + " " + text_lower[:1000])
+        if year_match:
+            year = year_match.group(0)
+    
+    # ── Sector detection ──────────────────────────────────────────────────
+    sector_patterns = {
+        "Food-tech": ["food delivery", "restaurant", "zomato", "swiggy"],
+        "Fintech": ["payments", "financial services", "paytm", "lending", "insurance"],
+        "EV Manufacturing": ["electric vehicle", "ev", "ola electric"],
+        "E-commerce": ["e-commerce", "online retail", "marketplace"],
+        "Logistics": ["logistics", "supply chain", "delhivery"],
+        "Healthcare": ["healthcare", "pharmaceutical", "hospital"],
+        "EdTech": ["education", "edtech", "learning"],
+        "SaaS": ["software", "saas", "cloud"],
+    }
+    sector = "Technology"  # default
+    for sec, keywords in sector_patterns.items():
+        if any(k in text_lower for k in keywords):
+            sector = sec
+            break
+    
+    detected = {
+        "company_name": company_name,
+        "doc_type": doc_type,
+        "year": year,
+        "sector": sector,
+    }
+    
+    if company_name == "Unknown":
+        logger.warning(
+            f"Could not detect company for {pdf_path.name}. "
+            f"Add it to company_patterns in auto_detect_metadata()."
+        )
+    else:
+        logger.info(
+            f"Auto-detected metadata for {pdf_path.name}",
+            extra=detected
+        )
+    
+    return detected
 def detect_section(text: str) -> str:
     """
     Heuristic: detect which section of a DRHP a page belongs to

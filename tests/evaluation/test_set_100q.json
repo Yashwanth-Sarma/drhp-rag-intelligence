@@ -1,0 +1,62 @@
+[
+  {
+    "id": "q001",
+    "category": "factual",
+    "question": "What are the main risk factors mentioned in Zomato's DRHP?",
+    "ground_truth": "Zomato's DRHP mentions several risk factors including intense competition from Swiggy and other food delivery platforms, regulatory risks, dependence on restaurant partners, and unit economics challenges including high customer acquisition costs.",
+    "company_filter": [
+      "Zomato"
+    ],
+    "doc_type_filter": [
+      "DRHP"
+    ]
+  },
+  {
+    "id": "q002",
+    "category": "factual",
+    "question": "What is Zomato's primary business model as described in their DRHP?",
+    "ground_truth": "Zomato operates a food delivery marketplace connecting consumers with restaurant partners through its app and website, earning commission from restaurants on each order and delivery fees from consumers.",
+    "company_filter": [
+      "Zomato"
+    ],
+    "doc_type_filter": [
+      "DRHP"
+    ]
+  },
+  {
+    "id": "q003",
+    "category": "factual",
+    "question": "What were the objects of Paytm's IPO as mentioned in their DRHP?",
+    "ground_truth": "Paytm's IPO proceeds were planned to be used for growing and strengthening the Paytm ecosystem, expanding merchant and consumer base, and general corporate purposes.",
+    "company_filter": [
+      "Paytm"
+    ],
+    "doc_type_filter": [
+      "DRHP"
+    ]
+  },
+  {
+    "id": "q004",
+    "category": "factual",
+    "question": "What are the main legal proceedings mentioned in Zomato's DRHP?",
+    "ground_truth": "Zomato's DRHP discloses various pending litigation matters including tax disputes and regulatory proceedings across different jurisdictions where the company operates.",
+    "company_filter": [
+      "Zomato"
+    ],
+    "doc_type_filter": [
+      "DRHP"
+    ]
+  },
+  {
+    "id": "q005",
+    "category": "factual",
+    "question": "Who are the major shareholders of Zomato as disclosed in their DRHP?",
+    "ground_truth": "Major shareholders of Zomato include Info Edge (India) Limited, Ant Financial (through subsidiaries), and various institutional investors, with the promoters holding a significant stake before the IPO.",
+    "company_filter": [
+      "Zomato"
+    ],
+    "doc_type_filter": [
+      "DRHP"
+    ]
+  }
+]

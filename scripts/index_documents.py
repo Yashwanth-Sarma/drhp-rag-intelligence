@@ -1,92 +1,150 @@
 """
 scripts/index_documents.py
 
-One-time (and incremental) indexing script.
-Run this after downloading new PDFs to data/raw_documents/
+Incremental indexing pipeline for FinSight.
+
+TRUE incremental behavior:
+1. Compute chunk_id for every chunk from every PDF
+2. Ask ChromaDB which chunk_ids already exist
+3. ONLY send new chunks to Voyage AI for embedding
+4. ONLY store new embeddings
+
+This means:
+- Adding one new PDF only embeds that PDF's chunks
+- Re-running never re-embeds already-indexed chunks
+- Zero wasted Voyage tokens after first run
 
 Usage:
-    python scripts/index_documents.py
-    python scripts/index_documents.py --reset   # Clears existing index first
-    python scripts/index_documents.py --company zomato_drhp_2021  # Index one file
-
-This script:
-1. Discovers all PDFs in data/raw_documents/
-2. Loads and chunks them using data_loader.py
-3. Embeds chunks using VoyageEmbedder
-4. Stores embeddings in ChromaDB
+    python scripts/index_documents.py              # index new chunks only
+    python scripts/index_documents.py --reset      # clear all and re-index
+    python scripts/index_documents.py --stats      # show what's indexed
 """
 
 import argparse
 import sys
 from pathlib import Path
 
-# Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.parsers.data_loader import load_all_pdfs, load_pdf, chunk_documents, get_corpus_stats
+from src.parsers.data_loader import load_all_pdfs, get_corpus_stats
 from src.embeddings.voyage_embedder import VoyageEmbedder
 from src.vector_store.chroma_store import ChromaStore
-from src.configuration.config import RAW_PDFS_DIR, validate_env
+from src.configuration.config import validate_env
 from src.shared.logger import get_logger
 
 logger = get_logger(__name__)
 
 
-def index_all(reset: bool = False) -> None:
-    """Index all PDFs found in data/raw_documents/"""
-    validate_env()
+def get_existing_chunk_ids(store: ChromaStore) -> set[str]:
+    """
+    Fetch all chunk_ids currently in ChromaDB.
+    Uses batched fetching to handle large collections.
+    """
+    total = store.collection.count()
+    if total == 0:
+        return set()
+    
+    existing_ids = set()
+    batch_size = 5000
+    offset = 0
+    
+    while offset < total:
+        result = store.collection.get(
+            limit=batch_size,
+            offset=offset,
+            include=[]  # only fetch IDs, not documents or embeddings — fastest possible
+        )
+        existing_ids.update(result["ids"])
+        offset += batch_size
+        logger.info(f"Fetched existing IDs: {len(existing_ids)}/{total}")
+    
+    return existing_ids
 
+
+def index_incremental(reset: bool = False) -> None:
+    validate_env()
+    
     store = ChromaStore()
     embedder = VoyageEmbedder()
-
+    
     if reset:
-        confirm = input("This will delete all existing embeddings. Type 'yes' to confirm: ")
+        confirm = input(
+            f"This will delete all {store.collection.count()} existing embeddings. "
+            "Type 'yes' to confirm: "
+        )
         if confirm.lower() != "yes":
             print("Aborted.")
             return
         store.reset_collection()
-        logger.info("Collection reset.")
-
-    # Load and chunk all PDFs
-    logger.info("Loading all PDFs...")
+        print("Collection cleared.")
+    
+    # ── Step 1: Load all chunks from disk ─────────────────────────────────
+    print("\nLoading and chunking all PDFs...")
     all_chunks = load_all_pdfs()
-
+    
     if not all_chunks:
-        print(f"\nNo PDFs found in {RAW_PDFS_DIR}")
-        print("Download DRHPs and save as: data/raw_documents/zomato_drhp_2021.pdf")
-        print("Filename must match a key in COMPANY_METADATA in config.py")
+        print(f"No PDFs found in data/raw_pdfs/")
+        print("Download DRHPs and place them there. Any filename works now.")
         return
-
-    # Print corpus stats before embedding
+    
     stats = get_corpus_stats(all_chunks)
-    print(f"\nCorpus loaded:")
+    print(f"\nCorpus on disk:")
     print(f"  Total chunks: {stats['total_chunks']}")
     print(f"  By company:   {stats['by_company']}")
     print(f"  By doc type:  {stats['by_doc_type']}")
-
-    # Embed all chunks
-    print(f"\nEmbedding {len(all_chunks)} chunks with Voyage AI voyage-finance-2...")
-    print("This may take a few minutes for large corpora...")
-
-    texts = [chunk.page_content for chunk in all_chunks]
+    
+    # ── Step 2: Find which chunks are NOT yet indexed ──────────────────────
+    print(f"\nChecking ChromaDB for existing chunks...")
+    existing_ids = get_existing_chunk_ids(store)
+    print(f"  Already indexed: {len(existing_ids)} chunks")
+    
+    new_chunks = [
+        chunk for chunk in all_chunks
+        if chunk.metadata.get("chunk_id") not in existing_ids
+    ]
+    
+    if not new_chunks:
+        print(f"\nAll {len(all_chunks)} chunks are already indexed.")
+        print("Nothing to do. Add new PDFs to data/raw_pdfs/ to index more.")
+        return
+    
+    print(f"  New chunks to embed: {len(new_chunks)}")
+    print(f"  Voyage AI tokens saved by skipping: {len(existing_ids)} chunks × ~300 tokens ≈ "
+          f"{len(existing_ids) * 300:,} tokens saved")
+    
+    # ── Step 3: Embed only new chunks ─────────────────────────────────────
+    print(f"\nEmbedding {len(new_chunks)} new chunks with Voyage AI voyage-finance-2...")
+    texts = [chunk.page_content for chunk in new_chunks]
     embeddings = embedder.embed_texts(texts)
-
-    # Store in ChromaDB
-    print(f"\nStoring in ChromaDB...")
-    added = store.add_chunks(all_chunks, embeddings)
-
-    final_stats = store.get_collection_stats()
+    
+    # ── Step 4: Store new embeddings ──────────────────────────────────────
+    print(f"\nStoring {len(new_chunks)} new chunks in ChromaDB...")
+    added = store.add_chunks(new_chunks, embeddings)
+    
+    final_count = store.collection.count()
     print(f"\nIndexing complete!")
-    print(f"  Chunks added this run: {added}")
-    print(f"  Total in store: {final_stats['total_chunks']}")
-    print(f"  Companies indexed: {final_stats['companies_sampled']}")
-    print(f"\nRun 'python scripts/test_retrieval.py' to verify.")
+    print(f"  New chunks added: {added}")
+    print(f"  Total in store:   {final_count}")
+    print(f"  Companies:        {store.get_collection_stats().get('companies_sampled', [])}")
+    print(f"\nRun: python scripts/test_retrieval.py")
+
+
+def show_stats() -> None:
+    store = ChromaStore()
+    stats = store.get_collection_stats()
+    print(f"\nChromaDB Collection Stats:")
+    print(f"  Total chunks:     {stats['total_chunks']}")
+    print(f"  Companies:        {stats.get('companies_sampled', [])}")
+    print(f"  Document types:   {stats.get('doc_types_sampled', [])}")
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Index financial documents into FinSight")
-    parser.add_argument("--reset", action="store_true", help="Clear existing index before indexing")
-    parser.add_argument("--company", type=str, help="Index only this company key (e.g. zomato_drhp_2021)")
+    parser = argparse.ArgumentParser(description="FinSight incremental document indexer")
+    parser.add_argument("--reset", action="store_true", help="Clear all embeddings and re-index from scratch")
+    parser.add_argument("--stats", action="store_true", help="Show current collection stats")
     args = parser.parse_args()
-
-    index_all(reset=args.reset)
+    
+    if args.stats:
+        show_stats()
+    else:
+        index_incremental(reset=args.reset)
