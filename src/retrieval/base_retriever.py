@@ -18,7 +18,7 @@ Outputs: Answer string + retrieved evidence chunks with citations
 import os
 import time
 from typing import Optional
-from langchain.schema import Document
+from langchain_core.documents import Document
 from groq import Groq
 
 from src.configuration.config import (

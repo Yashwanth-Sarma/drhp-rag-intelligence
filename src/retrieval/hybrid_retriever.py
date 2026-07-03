@@ -27,7 +27,7 @@ Full Stage 2 Pipeline:
 """
 
 from typing import Optional
-from langchain.schema import Document
+from langchain_core.documents import Document
 from rank_bm25 import BM25Okapi
 
 from src.vector_store.chroma_store import ChromaStore

@@ -25,8 +25,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import chromadb
 from chromadb.config import Settings
-from langchain.schema import Document
-
+from langchain_core.documents import Document
 from src.parsers.data_loader import load_all_pdfs, get_corpus_stats
 from src.chunking.contextual_chunker import ContextualChunker
 from src.embeddings.voyage_embedder import VoyageEmbedder
@@ -94,35 +93,7 @@ def index_stage2(reset: bool = False) -> None:
 
     # Store in Stage 2 collection
     print("\nStoring in ChromaDB Stage 2 collection...")
-    # Get all existing Stage 2 chunk IDs in one query
-    existing_count = collection.count()
-    existing_ids = set()
-    if existing_count > 0:
-        result = collection.get(limit=existing_count, include=[])
-        existing_ids = set(result["ids"])
-    print(f"Already in Stage 2 index: {len(existing_ids)} chunks")
     
-    ids, docs, vecs, metas = [], [], [], []
-    skipped = 0
-    
-    for chunk, embedding in zip(enriched_chunks, embeddings):
-        chunk_id = chunk.metadata.get("chunk_id", f"chunk_{hash(chunk.page_content)}")
-        
-        if chunk_id in existing_ids:
-            skipped += 1
-            continue
-        
-        clean_meta = {
-            k: str(v) if not isinstance(v, (str, int, float, bool)) else v
-            for k, v in chunk.metadata.items()
-        }
-        ids.append(chunk_id)
-        docs.append(chunk.page_content)
-        vecs.append(embedding)
-        metas.append(clean_meta)
-    
-    print(f"Skipped (already indexed): {skipped}")
-    print(f"New chunks to store: {len(ids)}")
 
     print(f"\nStage 2 indexing complete!")
     print(f"  Chunks added: {len(ids)}")

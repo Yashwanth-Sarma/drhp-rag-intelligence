@@ -26,7 +26,7 @@ Outputs: Same chunks with context-enriched page_content for embedding
 
 import time
 from typing import Optional
-from langchain.schema import Document
+from langchain_core.documents import Document
 from groq import Groq
 
 from src.configuration.config import GROQ_API_KEY, GROQ_MODEL
@@ -211,7 +211,7 @@ class ContextualChunker:
 
 
 if __name__ == "__main__":
-    from langchain.schema import Document
+    from langchain_core.documents import Document
 
     # Test with a single chunk
     chunker = ContextualChunker()

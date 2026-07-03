@@ -21,8 +21,8 @@ from pathlib import Path
 from typing import Optional
 
 import fitz  # PyMuPDF
-from langchain.schema import Document
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_core.documents import Document
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from src.configuration.config import (
     CHUNK_OVERLAP,
@@ -201,11 +201,12 @@ def load_pdf(
         raise FileNotFoundError(f"PDF not found at {pdf_path}")
 
     # Get base metadata from config
+    # Try config first, then auto-detect from content
     base_meta = COMPANY_METADATA.get(company_key, {})
     if not base_meta:
-        logger.warning(
-            f"No metadata found for key '{company_key}'. "
-            "Add it to COMPANY_METADATA in config.py"
+        logger.info(
+            f"'{company_key}' not in COMPANY_METADATA — "
+            "will auto-detect from PDF content."
         )
 
     logger.info(f"Loading PDF: {pdf_path.name} ({company_key})")
@@ -213,6 +214,14 @@ def load_pdf(
     documents = []
     try:
         pdf = fitz.open(str(pdf_path))
+        # Auto-detect metadata if not in config
+        if not base_meta:
+            # Use first 5 pages for detection
+            sample_pages = min(5, len(pdf))
+            sample_text = " ".join(
+                pdf[i].get_text("text") for i in range(sample_pages)
+            )
+            base_meta = auto_detect_metadata(pdf_path, sample_text)
         total_pages = len(pdf)
         logger.info(f"  Total pages: {total_pages}")
 

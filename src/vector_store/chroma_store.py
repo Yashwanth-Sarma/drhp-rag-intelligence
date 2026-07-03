@@ -24,7 +24,7 @@ from pathlib import Path
 from typing import Optional
 import chromadb
 from chromadb.config import Settings
-from langchain.schema import Document
+from langchain_core.documents import Document
 
 from src.configuration.config import EMBEDDINGS_DIR, RETRIEVAL_TOP_K
 from src.shared.logger import get_logger, log_duration
@@ -209,14 +209,26 @@ class ChromaStore:
 
     def get_collection_stats(self) -> dict:
         """Returns statistics about the current collection."""
-        count = self.collection.count()
-        if count == 0:
-            return {"total_chunks": 0, "companies": [], "doc_types": []}
 
-        # Sample first 1000 to get stats (avoid loading entire collection)
-        sample = self.collection.get(limit=min(1000, count), include=["metadatas"])
-        companies = list(set(m.get("company_name", "Unknown") for m in sample["metadatas"]))
-        doc_types = list(set(m.get("doc_type", "Unknown") for m in sample["metadatas"]))
+        count = self.collection.count()
+
+        if count == 0:
+            return {
+                "total_chunks": 0,
+                "companies_sampled": [],
+                "doc_types_sampled": [],
+            }
+
+        # Fetch ALL metadata to get accurate stats
+        result = self.collection.get(include=["metadatas"])
+
+        companies = sorted(
+            set(m.get("company_name", "Unknown") for m in result["metadatas"])
+        )
+
+        doc_types = sorted(
+            set(m.get("doc_type", "Unknown") for m in result["metadatas"])
+        )
 
         return {
             "total_chunks": count,

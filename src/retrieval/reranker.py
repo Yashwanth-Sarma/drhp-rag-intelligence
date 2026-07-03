@@ -25,7 +25,7 @@ Outputs: Reranked list of Documents (top N, default 5)
 import time
 from typing import Optional
 import cohere
-from langchain.schema import Document
+from langchain_core.documents import Document
 
 from src.configuration.config import COHERE_API_KEY, RERANK_TOP_N, RERANKER_MODEL
 from src.shared.logger import get_logger, log_duration
@@ -122,7 +122,7 @@ class CohereReranker:
 
 
 if __name__ == "__main__":
-    from langchain.schema import Document
+    from langchain_core.documents import Document
 
     reranker = CohereReranker()
     test_chunks = [
