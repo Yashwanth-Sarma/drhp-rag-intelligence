@@ -1,6 +1,8 @@
 """
-Central configuration for the DRHP RAG pipeline.
+src/configuration/config.py
+Central configuration for the FinSight pipeline.
 All constants, model names, and paths live here.
+No hardcoded values anywhere else in the project.
 """
 
 import os
@@ -14,7 +16,14 @@ BASE_DIR = Path(__file__).parent.parent.parent
 DATA_DIR = BASE_DIR / "data"
 RAW_PDFS_DIR = DATA_DIR / "raw_pdfs"
 PROCESSED_DIR = DATA_DIR / "processed"
-EMBEDDINGS_DIR = DATA_DIR / "embeddings"
+
+# Per-stage embedding directories
+EMBEDDINGS_STAGE1_DIR = DATA_DIR / "embeddings_stage1"
+EMBEDDINGS_STAGE2_DIR = DATA_DIR / "embeddings_stage2"
+EMBEDDINGS_STAGE3_DIR = DATA_DIR / "embeddings_stage3"
+
+# Legacy alias — used by older scripts
+EMBEDDINGS_DIR = EMBEDDINGS_STAGE1_DIR
 
 # ── API Keys ───────────────────────────────────────────────────────────────
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
@@ -27,7 +36,7 @@ NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD")
 
 # ── LangSmith Tracing ──────────────────────────────────────────────────────
 os.environ["LANGCHAIN_TRACING_V2"] = "true"
-os.environ["LANGCHAIN_PROJECT"] = os.getenv("LANGCHAIN_PROJECT", "drhp-rag")
+os.environ["LANGCHAIN_PROJECT"] = os.getenv("LANGCHAIN_PROJECT", "finsight-dev")
 
 # ── Models ─────────────────────────────────────────────────────────────────
 GROQ_MODEL = "llama-3.3-70b-versatile"
@@ -36,10 +45,15 @@ RERANKER_MODEL = "rerank-english-v3.0"
 EMBEDDING_DIMENSION = 1024
 
 # ── Chunking ───────────────────────────────────────────────────────────────
-CHUNK_SIZE = 512          # tokens per chunk
-CHUNK_OVERLAP = 50        # overlap between chunks
-RETRIEVAL_TOP_K = 20      # how many chunks to retrieve before reranking
-RERANK_TOP_N = 5          # how many chunks after reranking
+CHUNK_SIZE = 512
+CHUNK_OVERLAP = 50
+RETRIEVAL_TOP_K = 20
+RERANK_TOP_N = 5
+
+# ── Vector Store Collection Names ──────────────────────────────────────────
+COLLECTION_STAGE1 = "finsight_documents_stage1"
+COLLECTION_STAGE2 = "finsight_documents_stage2"
+COLLECTION_STAGE3 = "finsight_documents_stage3"
 
 # ── Companies in our corpus ────────────────────────────────────────────────
 COMPANY_METADATA = {
@@ -54,12 +68,6 @@ COMPANY_METADATA = {
         "year": "2024",
         "doc_type": "DRHP",
         "sector": "EV Manufacturing"
-    },
-    "swiggy_drhp_2024": {
-        "company_name": "Swiggy",
-        "year": "2024",
-        "doc_type": "DRHP",
-        "sector": "Food-tech"
     },
     "paytm_drhp_2021": {
         "company_name": "Paytm",
@@ -84,8 +92,11 @@ def validate_env() -> None:
             "Check your .env file."
         )
 
+
 if __name__ == "__main__":
     validate_env()
-    print("✓ All required environment variables present")
-    print(f"✓ Base directory: {BASE_DIR}")
-    print(f"✓ Raw PDFs directory: {RAW_PDFS_DIR}")
+    print("All required environment variables present")
+    print(f"Base directory: {BASE_DIR}")
+    print(f"Raw PDFs directory: {RAW_PDFS_DIR}")
+    print(f"Stage 1 embeddings: {EMBEDDINGS_STAGE1_DIR}")
+    print(f"Stage 2 embeddings: {EMBEDDINGS_STAGE2_DIR}")

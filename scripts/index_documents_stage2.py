@@ -1,108 +1,118 @@
 """
 scripts/index_documents_stage2.py
 
-Re-indexes all documents using Stage 2 contextual chunking.
-Run AFTER index_documents.py has already indexed Stage 1.
-
-What this does differently from Stage 1:
-- Each chunk gets an LLM-generated context prefix before embedding
-- Stores contextual embeddings in a SEPARATE ChromaDB collection
-  so Stage 1 baseline embeddings are preserved for comparison
-
-This separation is critical for the ablation study —
-you need both Stage 1 and Stage 2 embeddings to compare RAGAs scores.
+Stage 2 indexing — contextual chunking + hybrid embeddings.
+Stores in a separate collection from Stage 1 so both are preserved
+for ablation study comparison.
 
 Usage:
-    python scripts/index_documents_stage2.py
-    python scripts/index_documents_stage2.py --reset
+    python scripts/index_documents_stage2.py          # index new chunks only
+    python scripts/index_documents_stage2.py --reset  # clear and re-index
+    python scripts/index_documents_stage2.py --stats  # show collection stats
 """
 
-import sys
 import argparse
+import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-import chromadb
-from chromadb.config import Settings
-from langchain_core.documents import Document
 from src.parsers.data_loader import load_all_pdfs, get_corpus_stats
 from src.chunking.contextual_chunker import ContextualChunker
 from src.embeddings.voyage_embedder import VoyageEmbedder
-from src.configuration.config import EMBEDDINGS_DIR, validate_env
+from src.vector_store.chroma_store import ChromaStore
+from src.configuration.config import (
+    validate_env,
+    EMBEDDINGS_STAGE2_DIR,
+    COLLECTION_STAGE2,
+)
 from src.shared.logger import get_logger
 
 logger = get_logger(__name__)
 
-STAGE2_COLLECTION = "finsight_documents_stage2"
+
+def show_stats() -> None:
+    store = ChromaStore(
+        persist_dir=EMBEDDINGS_STAGE2_DIR,
+        collection_name=COLLECTION_STAGE2,
+    )
+    stats = store.get_collection_stats()
+    print(f"\nChromaDB Stage 2 Collection Stats:")
+    print(f"  Total chunks:    {stats['total_chunks']}")
+    print(f"  Companies:       {stats.get('companies_sampled', [])}")
+    print(f"  Document types:  {stats.get('doc_types_sampled', [])}")
 
 
 def index_stage2(reset: bool = False) -> None:
     validate_env()
 
-    # Use a separate persistent directory for Stage 2 embeddings
-    stage2_dir = EMBEDDINGS_DIR.parent / "embeddings_stage2"
-    stage2_dir.mkdir(parents=True, exist_ok=True)
-
-    client = chromadb.PersistentClient(
-        path=str(stage2_dir),
-        settings=Settings(anonymized_telemetry=False)
+    store = ChromaStore(
+        persist_dir=EMBEDDINGS_STAGE2_DIR,
+        collection_name=COLLECTION_STAGE2,
     )
+    embedder = VoyageEmbedder()
 
     if reset:
-        confirm = input("Reset Stage 2 index? This deletes all Stage 2 embeddings. Type 'yes': ")
+        confirm = input(
+            f"This will delete all Stage 2 embeddings "
+            f"({store.collection.count()} chunks). Type 'yes' to confirm: "
+        )
         if confirm.lower() != "yes":
             print("Aborted.")
             return
-        try:
-            client.delete_collection(STAGE2_COLLECTION)
-            logger.info("Stage 2 collection reset.")
-        except Exception:
-            pass
+        store.reset_collection()
+        print("Stage 2 collection cleared.")
 
-    collection = client.get_or_create_collection(
-        name=STAGE2_COLLECTION,
-        metadata={"hnsw:space": "cosine"}
-    )
+    print(f"\nStage 2 collection: {store.collection.count()} existing chunks")
 
-    print(f"Stage 2 collection: {collection.count()} existing chunks")
-
-    # Load all PDFs
     print("\nLoading all PDFs...")
     chunks = load_all_pdfs()
     if not chunks:
-        print(f"No PDFs found. Check data/raw_pdfs/")
+        print("No PDFs found.")
         return
 
     stats = get_corpus_stats(chunks)
-    print(f"Loaded {stats['total_chunks']} chunks from {stats['by_company']}")
+    print(f"Total chunks in corpus: {stats['total_chunks']}")
+    print(f"By company: {stats['by_company']}")
 
-    # Contextual enrichment
-    print(f"\nStarting contextual enrichment ({len(chunks)} chunks)...")
-    print("This calls Groq for each chunk — takes ~20-30 minutes for 3,000 chunks.")
-    print("Groq free tier: 14,400 requests/day — you have enough headroom.\n")
-
+    # ContextualChunker checks Stage 2 internally and skips existing chunks
     chunker = ContextualChunker()
-    enriched_chunks = chunker.enrich_all_chunks(chunks)
+    enriched = chunker.enrich_all_chunks(chunks)
 
-    # Embed enriched chunks
-    print(f"\nEmbedding {len(enriched_chunks)} enriched chunks...")
-    embedder = VoyageEmbedder()
-    texts = [chunk.page_content for chunk in enriched_chunks]
+    if not enriched:
+        print("\nNothing new to embed and store.")
+        print(f"Stage 2 collection total: {store.collection.count()} chunks")
+        return
+
+    # Embed and store enriched chunks
+    print(f"\nEmbedding {len(enriched)} enriched chunks...")
+    texts = [c.page_content for c in enriched]
     embeddings = embedder.embed_texts(texts)
 
-    # Store in Stage 2 collection
-    print("\nStoring in ChromaDB Stage 2 collection...")
-    
+    print(f"\nStoring in Stage 2 collection...")
+    added = store.add_chunks(enriched, embeddings)
 
-    print(f"\nStage 2 indexing complete!")
-    print(f"  Chunks added: {len(ids)}")
-    print(f"  Total in Stage 2 collection: {collection.count()}")
-    print(f"\nRun evaluation to compare Stage 1 vs Stage 2 RAGAs scores.")
+    final_stats = store.get_collection_stats()
+    print(f"\nSession complete!")
+    print(f"  Added this session: {added}")
+    print(f"  Total in Stage 2:   {final_stats['total_chunks']}")
+    print(f"  Companies:          {final_stats['companies_sampled']}")
+
+    remaining = stats['total_chunks'] - final_stats['total_chunks']
+    if remaining > 0:
+        print(f"\n  Remaining chunks: {remaining} — run again tomorrow to continue.")
+    else:
+        print(f"\n  All chunks indexed! Run evaluation:")
+        print(f"  python tests/evaluation/ragas_evaluator.py --stage 2 --quick")
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--reset", action="store_true")
+    parser = argparse.ArgumentParser(description="FinSight Stage 2 indexer")
+    parser.add_argument("--reset", action="store_true", help="Clear Stage 2 and re-index")
+    parser.add_argument("--stats", action="store_true", help="Show Stage 2 collection stats")
     args = parser.parse_args()
-    index_stage2(reset=args.reset)
+
+    if args.stats:
+        show_stats()
+    else:
+        index_stage2(reset=args.reset)

@@ -2,113 +2,114 @@
 src/vector_store/chroma_store.py
 
 ChromaDB vector store for FinSight.
-
-Why ChromaDB?
-- Runs locally with zero infrastructure setup
-- Persistent — embeddings survive restarts
-- Supports metadata filtering natively (filter by company_name, year, doc_type)
-- Free, open-source, actively maintained
-- Easy migration path to Qdrant for production
-
-This module handles:
-- Adding chunks + embeddings to the store
-- Semantic similarity search
-- Metadata-filtered search (most important for financial document retrieval)
-- Collection management (create, reset, inspect)
-
-Inputs:  Chunks (LangChain Documents) + embeddings from VoyageEmbedder
-Outputs: Retrieved chunks with similarity scores for any query
+Accepts persist_dir and collection_name so different pipeline stages
+can use different collections without any monkey-patching.
 """
 
 from pathlib import Path
 from typing import Optional
+
 import chromadb
 from chromadb.config import Settings
 from langchain_core.documents import Document
 
-from src.configuration.config import EMBEDDINGS_DIR, RETRIEVAL_TOP_K
+from src.configuration.config import (
+    EMBEDDINGS_STAGE1_DIR,
+    COLLECTION_STAGE1,
+    RETRIEVAL_TOP_K,
+)
 from src.shared.logger import get_logger, log_duration
 from src.shared.exceptions import RetrievalError
 
 logger = get_logger(__name__)
 
-COLLECTION_NAME = "finsight_documents"
-
 
 class ChromaStore:
     """
-    Manages the ChromaDB vector store for FinSight.
-    
-    Collection naming: one collection for all documents, differentiated by metadata.
-    Why one collection? Metadata filtering within one collection is faster and simpler
-    than managing 20+ collections (one per company). Filtering by company_name at query
-    time achieves the same result.
+    Manages a ChromaDB vector store collection for FinSight.
+
+    Args:
+        persist_dir:     Directory where ChromaDB stores data on disk.
+                         Defaults to Stage 1 embeddings directory.
+        collection_name: Name of the ChromaDB collection to use.
+                         Defaults to Stage 1 collection name.
+
+    Example — Stage 1:
+        store = ChromaStore()
+
+    Example — Stage 2:
+        from src.configuration.config import EMBEDDINGS_STAGE2_DIR, COLLECTION_STAGE2
+        store = ChromaStore(
+            persist_dir=EMBEDDINGS_STAGE2_DIR,
+            collection_name=COLLECTION_STAGE2
+        )
     """
 
-    def __init__(self, persist_dir: Optional[Path] = None) -> None:
-        self.persist_dir = persist_dir or EMBEDDINGS_DIR
+    def __init__(
+        self,
+        persist_dir: Optional[Path] = None,
+        collection_name: Optional[str] = None,
+    ) -> None:
+        self.persist_dir = persist_dir or EMBEDDINGS_STAGE1_DIR
+        self.collection_name = collection_name or COLLECTION_STAGE1
         self.persist_dir.mkdir(parents=True, exist_ok=True)
 
         self.client = chromadb.PersistentClient(
             path=str(self.persist_dir),
-            settings=Settings(anonymized_telemetry=False)
+            settings=Settings(anonymized_telemetry=False),
         )
         self.collection = self.client.get_or_create_collection(
-            name=COLLECTION_NAME,
-            metadata={"hnsw:space": "cosine"}   # cosine similarity for text embeddings
+            name=self.collection_name,
+            metadata={"hnsw:space": "cosine"},
         )
         count = self.collection.count()
         logger.info(
             "ChromaStore initialized",
-            extra={"persist_dir": str(self.persist_dir), "existing_chunks": count}
+            extra={
+                "collection": self.collection_name,
+                "persist_dir": str(self.persist_dir),
+                "existing_chunks": count,
+            },
         )
 
     @log_duration("add_chunks")
     def add_chunks(
         self,
         chunks: list[Document],
-        embeddings: list[list[float]]
+        embeddings: list[list[float]],
     ) -> int:
         """
-        Add chunks and their embeddings to the vector store.
-        Skips duplicates using chunk_id metadata.
-        
-        Args:
-            chunks:     List of LangChain Documents with metadata.
-            embeddings: Corresponding embedding vectors (same length as chunks).
-        
+        Add chunks and embeddings to the collection.
+        Skips chunks whose chunk_id already exists.
+
         Returns:
-            Number of chunks actually added (excluding duplicates).
-        
-        Raises:
-            ValueError: If chunks and embeddings lengths don't match.
-            RetrievalError: If ChromaDB operation fails.
+            Number of chunks actually added.
         """
         if len(chunks) != len(embeddings):
             raise ValueError(
-                f"Chunks ({len(chunks)}) and embeddings ({len(embeddings)}) must be same length."
+                f"Chunks ({len(chunks)}) and embeddings ({len(embeddings)}) "
+                "must be the same length."
             )
 
-        # Build unique IDs, documents, embeddings, metadatas for ChromaDB
+        # Collect all existing IDs in one query
+        existing_count = self.collection.count()
+        existing_ids: set[str] = set()
+        if existing_count > 0:
+            result = self.collection.get(limit=existing_count, include=[])
+            existing_ids = set(result["ids"])
+
         ids, docs, vecs, metas = [], [], [], []
         skipped = 0
 
         for chunk, embedding in zip(chunks, embeddings):
             chunk_id = chunk.metadata.get("chunk_id")
             if not chunk_id:
-                logger.warning(f"Chunk missing chunk_id — generating fallback ID")
                 chunk_id = f"chunk_{hash(chunk.page_content)}"
 
-            # Check for existing chunk — skip if already indexed
-            try:
-                existing = self.collection.get(ids=[chunk_id])
-                if existing["ids"]:
-                    skipped += 1
-                    continue
-            except Exception:
-                pass  # Not found — proceed to add
+            if chunk_id in existing_ids:
+                skipped += 1
+                continue
 
-            # ChromaDB metadata values must be str, int, float, or bool
             clean_meta = {
                 k: str(v) if not isinstance(v, (str, int, float, bool)) else v
                 for k, v in chunk.metadata.items()
@@ -120,23 +121,28 @@ class ChromaStore:
             metas.append(clean_meta)
 
         if not ids:
-            logger.info(f"All {skipped} chunks already indexed — nothing added.")
+            logger.info(
+                f"All {skipped} chunks already indexed — nothing added."
+            )
             return 0
 
-        # ChromaDB add in batches of 1000 (API limit)
-        BATCH_SIZE = 500
-        for i in range(0, len(ids), BATCH_SIZE):
+        batch_size = 500
+        for i in range(0, len(ids), batch_size):
             self.collection.add(
-                ids=ids[i:i+BATCH_SIZE],
-                documents=docs[i:i+BATCH_SIZE],
-                embeddings=vecs[i:i+BATCH_SIZE],
-                metadatas=metas[i:i+BATCH_SIZE]
+                ids=ids[i : i + batch_size],
+                documents=docs[i : i + batch_size],
+                embeddings=vecs[i : i + batch_size],
+                metadatas=metas[i : i + batch_size],
             )
 
         added = len(ids)
         logger.info(
             "Chunks added to ChromaDB",
-            extra={"added": added, "skipped_duplicates": skipped, "total_in_store": self.collection.count()}
+            extra={
+                "added": added,
+                "skipped_duplicates": skipped,
+                "total_in_store": self.collection.count(),
+            },
         )
         return added
 
@@ -145,35 +151,30 @@ class ChromaStore:
         self,
         query_embedding: list[float],
         top_k: int = RETRIEVAL_TOP_K,
-        metadata_filter: Optional[dict] = None
+        metadata_filter: Optional[dict] = None,
     ) -> list[Document]:
         """
-        Search the vector store for chunks most similar to the query.
-        
+        Search for chunks most similar to the query embedding.
+
         Args:
             query_embedding: Vector from VoyageEmbedder.embed_query()
             top_k:           Number of results to return.
-            metadata_filter: ChromaDB where filter. Examples:
+            metadata_filter: ChromaDB where-filter dict. Examples:
                              {"company_name": "Zomato"}
                              {"$and": [{"company_name": "Zomato"}, {"year": "2021"}]}
-                             {"doc_type": {"$in": ["DRHP", "Annual_Report"]}}
-        
+
         Returns:
-            List of LangChain Documents, ordered by similarity (most similar first).
-            Each document has a "similarity_score" key added to its metadata.
-        
-        Example:
-            results = store.similarity_search(
-                query_embedding=embedder.embed_query("Zomato revenue FY2021"),
-                top_k=10,
-                metadata_filter={"company_name": "Zomato"}
-            )
+            List of Documents ordered by similarity, most similar first.
         """
         try:
-            query_params = {
+            n = min(top_k, self.collection.count())
+            if n == 0:
+                return []
+
+            query_params: dict = {
                 "query_embeddings": [query_embedding],
-                "n_results": min(top_k, self.collection.count()),
-                "include": ["documents", "metadatas", "distances"]
+                "n_results": n,
+                "include": ["documents", "metadatas", "distances"],
             }
             if metadata_filter:
                 query_params["where"] = metadata_filter
@@ -183,35 +184,36 @@ class ChromaStore:
         except Exception as e:
             raise RetrievalError(f"ChromaDB query failed: {e}") from e
 
-        # Convert ChromaDB result format to LangChain Documents
         retrieved = []
         for doc_text, metadata, distance in zip(
             results["documents"][0],
             results["metadatas"][0],
-            results["distances"][0]
+            results["distances"][0],
         ):
-            # ChromaDB cosine distance: 0 = identical, 2 = opposite
-            # Convert to similarity score: 1 = identical, -1 = opposite
             similarity = 1 - (distance / 2)
             metadata["similarity_score"] = round(similarity, 4)
-            retrieved.append(Document(page_content=doc_text, metadata=metadata))
+            retrieved.append(
+                Document(page_content=doc_text, metadata=metadata)
+            )
 
         logger.info(
             "Similarity search complete",
             extra={
-                "query_top_k": top_k,
+                "top_k": top_k,
                 "returned": len(retrieved),
                 "filter_applied": bool(metadata_filter),
-                "top_score": retrieved[0].metadata.get("similarity_score") if retrieved else None
-            }
+                "top_score": (
+                    retrieved[0].metadata.get("similarity_score")
+                    if retrieved
+                    else None
+                ),
+            },
         )
         return retrieved
 
     def get_collection_stats(self) -> dict:
         """Returns statistics about the current collection."""
-
         count = self.collection.count()
-
         if count == 0:
             return {
                 "total_chunks": 0,
@@ -219,13 +221,10 @@ class ChromaStore:
                 "doc_types_sampled": [],
             }
 
-        # Fetch ALL metadata to get accurate stats
         result = self.collection.get(include=["metadatas"])
-
         companies = sorted(
             set(m.get("company_name", "Unknown") for m in result["metadatas"])
         )
-
         doc_types = sorted(
             set(m.get("doc_type", "Unknown") for m in result["metadatas"])
         )
@@ -237,15 +236,14 @@ class ChromaStore:
         }
 
     def reset_collection(self) -> None:
-        """
-        Deletes and recreates the collection. USE WITH CAUTION.
-        Only for development — resets all indexed data.
-        """
-        logger.warning("Resetting ChromaDB collection — all data will be lost.")
-        self.client.delete_collection(COLLECTION_NAME)
+        """Delete and recreate the collection. USE WITH CAUTION."""
+        logger.warning(
+            f"Resetting collection '{self.collection_name}' — all data will be lost."
+        )
+        self.client.delete_collection(self.collection_name)
         self.collection = self.client.create_collection(
-            name=COLLECTION_NAME,
-            metadata={"hnsw:space": "cosine"}
+            name=self.collection_name,
+            metadata={"hnsw:space": "cosine"},
         )
         logger.info("Collection reset complete.")
 
@@ -265,8 +263,14 @@ if __name__ == "__main__":
         results = store.similarity_search(query_vec, top_k=3)
         print(f"\nTop 3 results for: '{test_query}'")
         for i, doc in enumerate(results, 1):
-            print(f"\n--- Result {i} (score: {doc.metadata['similarity_score']}) ---")
-            print(f"Company: {doc.metadata.get('company_name')} | Page: {doc.metadata.get('page_number')}")
+            print(
+                f"\n--- Result {i} "
+                f"(score: {doc.metadata['similarity_score']}) ---"
+            )
+            print(
+                f"Company: {doc.metadata.get('company_name')} "
+                f"| Page: {doc.metadata.get('page_number')}"
+            )
             print(f"Text: {doc.page_content[:200]}...")
     else:
         print("Collection empty — run the indexing pipeline first.")
