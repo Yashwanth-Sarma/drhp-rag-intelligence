@@ -28,7 +28,6 @@ def main(clear: bool = False) -> None:
         confirm = input("Clear entire Neo4j graph? Type 'yes' to confirm: ")
         if confirm.lower() != "yes":
             print("Aborted.")
-            builder.close()
             return
         builder.clear_graph()
 
@@ -39,7 +38,6 @@ def main(clear: bool = False) -> None:
 
     stats_after = builder.get_stats()
     print(f"Neo4j after:  {stats_after}")
-    builder.close()
 
 
 if __name__ == "__main__":
@@ -51,6 +49,5 @@ if __name__ == "__main__":
     if args.stats:
         builder = GraphBuilder()
         print(f"Graph stats: {builder.get_stats()}")
-        builder.close()
     else:
         main(clear=args.clear)

@@ -1,147 +1,123 @@
 """
 src/knowledge_graph/graph_retriever.py
 
-Queries Neo4j to answer relationship and comparison questions.
-Used by Stage 3 pipeline for multi-hop queries that flat vector search cannot handle.
-
-Example queries this handles:
-- "What subsidiaries does Zomato own?"
-- "What companies compete with Paytm?"
-- "How is Hyperpure related to Zomato?"
+Queries Neo4j via HTTP Query API for relationship and comparison questions.
+Uses HTTPS (port 443) — same approach as graph_builder.py.
 """
 
+import logging
+import requests
 from typing import Optional
 
 from src.configuration.config import NEO4J_URI, NEO4J_USERNAME, NEO4J_PASSWORD
-from src.shared.logger import get_logger
 from src.shared.exceptions import FinSightError
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
+
+
+def _build_http_url(neo4j_uri: str, instance_id: str) -> str:
+    host = neo4j_uri.replace("neo4j+s://", "").replace("neo4j://", "").rstrip("/")
+    return f"https://{host}/db/{instance_id}/query/v2"
 
 
 class GraphRetriever:
     """
-    Queries the Neo4j knowledge graph for entity relationships.
-    Returns structured results that feed into the LLM answer generator.
+    Queries Neo4j knowledge graph via HTTP Query API.
+    Returns structured relationship data for multi-hop queries.
     """
 
     def __init__(self) -> None:
-        if not all([NEO4J_URI, NEO4J_PASSWORD]):
+        if not all([NEO4J_URI, NEO4J_USERNAME, NEO4J_PASSWORD]):
             raise FinSightError("NEO4J credentials missing from .env")
-        try:
-            from neo4j import GraphDatabase
-            self.driver = GraphDatabase.driver(
-                NEO4J_URI,
-                auth=(NEO4J_USERNAME, NEO4J_PASSWORD)
-            )
-            self.driver.verify_connectivity()
-            logger.info("GraphRetriever connected to Neo4j")
-        except Exception as e:
-            raise FinSightError(f"Neo4j connection failed: {e}") from e
 
-    def close(self) -> None:
-        self.driver.close()
+        self.instance_id = NEO4J_USERNAME
+        self.api_url = _build_http_url(NEO4J_URI, self.instance_id)
+        self.auth = (NEO4J_USERNAME, NEO4J_PASSWORD)
+        logger.info("GraphRetriever initialized", extra={"url": self.api_url})
+
+    def _run_query(self, cypher: str, parameters: Optional[dict] = None) -> list[dict]:
+        """Run Cypher query, return list of result dicts."""
+        payload = {"statement": cypher}
+        if parameters:
+            payload["parameters"] = parameters
+
+        try:
+            response = requests.post(
+                self.api_url,
+                auth=self.auth,
+                json=payload,
+                headers={"Content-Type": "application/json"},
+                timeout=15,
+            )
+            if not response.ok:
+                logger.warning(f"Graph query failed {response.status_code}: {response.text[:100]}")
+                return []
+
+            result = response.json()
+            data = result.get("data", {})
+            fields = data.get("fields", [])
+            values = data.get("values", [])
+            return [dict(zip(fields, row)) for row in values]
+
+        except Exception as e:
+            logger.warning(f"Graph query error: {e}")
+            return []
 
     def get_entity_relationships(
         self,
         entity_name: str,
         relation_type: Optional[str] = None,
-        depth: int = 2,
     ) -> list[dict]:
-        """
-        Get all relationships for a given entity.
-
-        Args:
-            entity_name:   Name of the entity to query (e.g. "Zomato")
-            relation_type: Filter by relationship type (e.g. "OWNS")
-            depth:         How many hops to traverse (default 2)
-
-        Returns:
-            List of relationship dicts: {from, relation, to, context}
-        """
+        """Get all relationships for a given entity name."""
         if relation_type:
-            query = """
+            cypher = """
             MATCH (a:Entity {name: $name})-[r:RELATED_TO {type: $rel_type}]->(b:Entity)
             RETURN a.name AS from_entity, r.type AS relation,
                    b.name AS to_entity, r.context AS context
             LIMIT 20
             """
-            params = {"name": entity_name, "rel_type": relation_type}
+            return self._run_query(cypher, {"name": entity_name, "rel_type": relation_type})
         else:
-            query = """
+            cypher = """
             MATCH (a:Entity {name: $name})-[r:RELATED_TO]->(b:Entity)
             RETURN a.name AS from_entity, r.type AS relation,
                    b.name AS to_entity, r.context AS context
             LIMIT 30
             """
-            params = {"name": entity_name}
+            return self._run_query(cypher, {"name": entity_name})
 
-        with self.driver.session() as session:
-            result = session.run(query, **params)
-            return [dict(record) for record in result]
-
-    def compare_companies(
-        self,
-        company_a: str,
-        company_b: str,
-        relation_type: Optional[str] = None,
-    ) -> dict:
-        """
-        Compare relationships for two companies.
-
-        Returns:
-            dict with 'company_a_relations', 'company_b_relations', 'shared_entities'
-        """
-        rels_a = self.get_entity_relationships(company_a, relation_type)
-        rels_b = self.get_entity_relationships(company_b, relation_type)
-
+    def compare_companies(self, company_a: str, company_b: str) -> dict:
+        """Compare relationships for two companies."""
+        rels_a = self.get_entity_relationships(company_a)
+        rels_b = self.get_entity_relationships(company_b)
         entities_a = {r["to_entity"] for r in rels_a}
         entities_b = {r["to_entity"] for r in rels_b}
-        shared = entities_a & entities_b
-
         return {
             "company_a": company_a,
             "company_b": company_b,
             "company_a_relations": rels_a,
             "company_b_relations": rels_b,
-            "shared_entities": list(shared),
+            "shared_entities": list(entities_a & entities_b),
         }
 
     def search_entities(self, search_term: str) -> list[dict]:
         """Find entities by partial name match."""
-        query = """
+        cypher = """
         MATCH (e:Entity)
         WHERE toLower(e.name) CONTAINS toLower($term)
         RETURN e.name AS name, e.type AS type, e.source_company AS company
         LIMIT 10
         """
-        with self.driver.session() as session:
-            result = session.run(query, term=search_term)
-            return [dict(record) for record in result]
+        return self._run_query(cypher, {"term": search_term})
 
     def format_for_llm(self, relationships: list[dict]) -> str:
-        """Format graph results as readable context for LLM answer generation."""
+        """Format graph results as readable context string for LLM."""
         if not relationships:
-            return "No graph relationships found."
-
+            return "No graph relationships found for this query."
         lines = ["Knowledge Graph Evidence:"]
         for r in relationships:
+            context = f" ({r['context']})" if r.get("context") else ""
             lines.append(
-                f"  {r['from_entity']} --[{r['relation']}]--> {r['to_entity']}"
-                + (f" ({r['context']})" if r.get("context") else "")
+                f"  {r['from_entity']} --[{r['relation']}]--> {r['to_entity']}{context}"
             )
         return "\n".join(lines)
-
-
-if __name__ == "__main__":
-    retriever = GraphRetriever()
-
-    print("Searching for Zomato...")
-    rels = retriever.get_entity_relationships("Zomato")
-    print(f"Found {len(rels)} relationships")
-    for r in rels[:5]:
-        print(f"  {r['from_entity']} --[{r['relation']}]--> {r['to_entity']}")
-
-    print("\nFormatted for LLM:")
-    print(retriever.format_for_llm(rels[:3]))
-    retriever.close()
