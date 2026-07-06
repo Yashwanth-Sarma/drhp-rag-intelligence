@@ -35,6 +35,8 @@ Usage:
 import os
 import time
 import logging
+from dotenv import load_dotenv
+load_dotenv()
 from enum import Enum
 from typing import Optional
 
@@ -64,7 +66,7 @@ PROVIDERS = {
     "cerebras": {
         "base_url": "https://api.cerebras.ai/v1",
         "api_key_env": "CEREBRAS_API_KEY",
-        "model": "llama-3.3-70b",
+        "model": "gemma-4-31b",
         "daily_token_limit": 1_000_000,
         "rpm_limit": 30,
         "description": "Cerebras WSE — 1M tokens/day free, very fast",

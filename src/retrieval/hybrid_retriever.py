@@ -2,11 +2,13 @@
 src/retrieval/hybrid_retriever.py
 
 Stage 2 Hybrid Retriever.
-Combines BM25 keyword search + vector semantic search + Cohere reranker.
-Reads from whichever stage collection is specified via the stage parameter.
+BM25 + Dense Vector + Metadata Filter + Cohere Reranker.
+Integrates RetrievalQualityAssessor for mathematical gap detection.
+Routes reasoning to Gemini Flash/Pro via ProviderRouter.
 """
 
 import time
+import logging
 from pathlib import Path
 from typing import Optional
 
@@ -15,8 +17,6 @@ from langchain_core.documents import Document
 from rank_bm25 import BM25Okapi
 
 from src.configuration.config import (
-    GROQ_API_KEY,
-    GROQ_MODEL,
     RETRIEVAL_TOP_K,
     RERANK_TOP_N,
     EMBEDDINGS_STAGE1_DIR,
@@ -30,7 +30,9 @@ from src.embeddings.voyage_embedder import VoyageEmbedder
 from src.vector_store.chroma_store import ChromaStore
 from src.retrieval.reranker import CohereReranker
 from src.retrieval.metadata_filter import build_filter, extract_companies_from_query
+from src.retrieval.quality_assessor import RetrievalQualityAssessor, compute_difficulty_score
 from src.retrieval.base_retriever import format_context, build_citations, ANSWER_PROMPT
+from src.llm.provider_router import get_router, TaskType
 from src.shared.logger import get_logger, log_duration
 from src.shared.exceptions import RetrievalError
 
@@ -43,7 +45,7 @@ def reciprocal_rank_fusion(
 ) -> list[Document]:
     """
     Merge multiple ranked result lists using Reciprocal Rank Fusion.
-    Deduplicates by chunk_id. Returns merged list sorted by RRF score.
+    Deduplicates by chunk_id. Higher RRF score = appeared higher in more lists.
     """
     scores: dict[str, float] = {}
     chunk_map: dict[str, Document] = {}
@@ -68,14 +70,11 @@ def reciprocal_rank_fusion(
 
 class HybridRetriever:
     """
-    Stage 2 retriever: BM25 + vector search + metadata filter + Cohere reranker.
+    Stage 2/3 retriever with BM25, dense vector, reranking,
+    mathematical quality assessment, and adaptive Gemini Flash/Pro routing.
 
     Args:
-        stage: Which pipeline stage to use. Determines which ChromaDB
-               collection and embeddings directory to read from.
-               1 = Stage 1 naive embeddings
-               2 = Stage 2 contextual embeddings (default)
-               3 = Stage 3 ColPali embeddings
+        stage: 1 = naive embeddings, 2 = contextual embeddings (default), 3 = ColPali
     """
 
     STAGE_MAP = {
@@ -93,13 +92,13 @@ class HybridRetriever:
                 "Falling back to Stage 1."
             )
             persist_dir, collection_name = self.STAGE_MAP[1]
+            stage = 1
 
-        self.store = ChromaStore(
-            persist_dir=persist_dir,
-            collection_name=collection_name,
-        )
+        self.store = ChromaStore(persist_dir=persist_dir, collection_name=collection_name)
         self.embedder = VoyageEmbedder()
         self.reranker = CohereReranker()
+        self.quality_assessor = RetrievalQualityAssessor()
+        self.router = get_router()
         self.stage = stage
 
         logger.info(
@@ -115,7 +114,7 @@ class HybridRetriever:
         self,
         metadata_filter: Optional[dict] = None,
     ) -> tuple[Optional[BM25Okapi], list[Document]]:
-        """Build BM25 index from ChromaDB. Filtered by metadata if provided."""
+        """Build BM25 index from ChromaDB, optionally filtered by metadata."""
         get_params: dict = {"include": ["documents", "metadatas"]}
         if metadata_filter:
             get_params["where"] = metadata_filter
@@ -131,10 +130,9 @@ class HybridRetriever:
             for doc, meta in zip(results["documents"], results["metadatas"])
         ]
         tokenized = [doc.split() for doc in results["documents"]]
-        index = BM25Okapi(tokenized)
-
+        bm25 = BM25Okapi(tokenized)
         logger.info("BM25 index built", extra={"total_docs": len(chunks)})
-        return index, chunks
+        return bm25, chunks
 
     def _bm25_search(
         self,
@@ -157,20 +155,53 @@ class HybridRetriever:
                 doc = chunks[idx]
                 updated_meta = dict(doc.metadata)
                 updated_meta["bm25_score"] = round(float(raw_scores[idx]), 4)
-                results.append(
-                    Document(page_content=doc.page_content, metadata=updated_meta)
-                )
+                results.append(Document(page_content=doc.page_content, metadata=updated_meta))
 
-        logger.info(
-            "BM25 search complete",
-            extra={
-                "results": len(results),
-                "top_score": (
-                    results[0].metadata["bm25_score"] if results else 0
-                ),
-            },
-        )
         return results
+
+    def _llm_gap_detection(
+        self,
+        question: str,
+        quality_summary: str,
+        missing_entities: list[str],
+    ) -> tuple[bool, str]:
+        """
+        Called only when mathematical quality assessment flags LOW confidence.
+        Asks the LLM whether to retrieve again and with what refined query.
+
+        Returns:
+            (should_retry: bool, refined_query: str)
+        """
+        gap_prompt = f"""You are evaluating whether retrieved evidence is sufficient to answer a financial question.
+
+ORIGINAL QUESTION: {question}
+
+RETRIEVAL QUALITY SUMMARY: {quality_summary}
+
+MISSING ENTITIES (not found in retrieved chunks): {missing_entities}
+
+Based on the above, answer TWO things:
+1. Is the retrieved evidence sufficient? (yes/no)
+2. If no, what specific refined search query would find the missing information? (one sentence)
+
+Reply in this exact format:
+SUFFICIENT: yes/no
+REFINED_QUERY: [refined query or "none"]"""
+
+        try:
+            response = self.router.generate(
+                task=TaskType.GAP_DETECTION,
+                prompt=gap_prompt,
+                temperature=0.0,
+                max_tokens=100,
+            )
+            lines = response.strip().split("\n")
+            sufficient = "yes" in lines[0].lower() if lines else True
+            refined = lines[1].replace("REFINED_QUERY:", "").strip() if len(lines) > 1 else "none"
+            return not sufficient, refined if refined != "none" else question
+        except Exception as e:
+            logger.warning(f"Gap detection LLM call failed: {e}. Proceeding with original results.")
+            return False, question
 
     @log_duration("hybrid_query")
     def query(
@@ -182,31 +213,45 @@ class HybridRetriever:
         top_k: int = RETRIEVAL_TOP_K,
         final_top_n: int = RERANK_TOP_N,
         auto_detect_companies: bool = True,
+        max_retrieval_cycles: int = 2,
     ) -> dict:
         """
-        Full Stage 2 hybrid retrieval pipeline.
+        Full Stage 2 hybrid retrieval pipeline with quality assessment.
+
+        Pipeline:
+            1. Auto-detect entities from query
+            2. Build metadata filter
+            3. Dense vector search + BM25 keyword search in parallel
+            4. RRF fusion
+            5. Cohere reranking
+            6. Mathematical quality assessment
+            7. If LOW confidence: LLM gap detector → optional second retrieval
+            8. Compute difficulty score → route to Flash or Pro
+            9. Generate answer with citations
 
         Args:
-            question:              User's natural language question.
-            companies:             Filter to these companies e.g. ["Zomato"].
-            years:                 Filter to these years e.g. ["2021"].
-            doc_types:             Filter to these doc types e.g. ["DRHP"].
-            top_k:                 Chunks per retrieval method before fusion.
-            final_top_n:           Chunks after reranking — sent to LLM.
-            auto_detect_companies: Detect company names from query text if True.
+            question:              User query.
+            companies:             Override company filter.
+            years:                 Override year filter.
+            doc_types:             Override doc type filter.
+            top_k:                 Chunks per retrieval before reranking.
+            final_top_n:           Chunks after reranking sent to LLM.
+            auto_detect_companies: Detect companies from query text.
+            max_retrieval_cycles:  Maximum retrieval attempts (1 or 2).
 
         Returns:
-            dict: answer, citations, chunks, latency_ms, retrieval_debug
+            dict: answer, citations, chunks, latency_ms, quality_report,
+                  provider_used, retrieval_debug
         """
-        from groq import Groq
-
         start = time.time()
 
+        # Step 1: Entity detection
         if auto_detect_companies and not companies:
             detected = extract_companies_from_query(question)
             if detected:
                 companies = detected
 
+        # Step 2: Metadata filter
         metadata_filter = build_filter(
             companies=companies,
             years=years,
@@ -218,102 +263,169 @@ class HybridRetriever:
             extra={
                 "question": question[:100],
                 "companies": companies,
-                "metadata_filter": bool(metadata_filter),
+                "stage": self.stage,
             },
         )
 
-        # Vector search
-        query_embedding = self.embedder.embed_query(question)
-        vector_results = self.store.similarity_search(
-            query_embedding=query_embedding,
-            top_k=top_k,
-            metadata_filter=metadata_filter,
-        )
+        # Steps 3-6: Retrieval + quality assessment loop
+        current_question = question
+        final_reranked = []
+        quality_report = None
 
-        # BM25 search
-        bm25_results = self._bm25_search(
-            query=question,
-            top_k=top_k,
-            metadata_filter=metadata_filter,
-        )
-
-        # RRF fusion
-        fused = reciprocal_rank_fusion([vector_results, bm25_results])
-        top_fused = fused[:top_k]
-
-        logger.info(
-            "Fusion complete",
-            extra={
-                "vector": len(vector_results),
-                "bm25": len(bm25_results),
-                "fused": len(fused),
-            },
-        )
-
-        # Rerank
-        if top_fused:
-            reranked = self.reranker.rerank(
-                query=question,
-                chunks=top_fused,
-                top_n=final_top_n,
+        for cycle in range(max_retrieval_cycles):
+            # Dense vector search
+            query_embedding = self.embedder.embed_query(current_question)
+            vector_results = self.store.similarity_search(
+                query_embedding=query_embedding,
+                top_k=top_k,
+                metadata_filter=metadata_filter,
             )
-        else:
-            reranked = []
 
-        if not reranked:
+            # BM25 keyword search
+            bm25_results = self._bm25_search(
+                query=current_question,
+                top_k=top_k,
+                metadata_filter=metadata_filter,
+            )
+
+            # RRF fusion
+            fused = reciprocal_rank_fusion([vector_results, bm25_results])
+            top_fused = fused[:top_k]
+
+            # Cohere reranking
+            if top_fused:
+                reranked = self.reranker.rerank(
+                    query=current_question,
+                    chunks=top_fused,
+                    top_n=final_top_n,
+                )
+            else:
+                reranked = []
+
+            # Mathematical quality assessment
+            quality_report = self.quality_assessor.assess(
+                vector_results=vector_results,
+                bm25_results=bm25_results,
+                fused_reranked=reranked,
+                queried_entities=companies or [],
+            )
+
+            logger.info(f"Cycle {cycle + 1} quality: {quality_report.summary}")
+
+            # If high confidence or last cycle, use these results
+            if quality_report.is_high_confidence or cycle == max_retrieval_cycles - 1:
+                final_reranked = reranked
+                break
+
+            # Low confidence: ask LLM gap detector if worth retrying
+            should_retry, refined_query = self._llm_gap_detection(
+                question=current_question,
+                quality_summary=quality_report.summary,
+                missing_entities=quality_report.missing_entities,
+            )
+
+            if should_retry and refined_query != current_question:
+                logger.info(f"Gap detector triggered retry with: '{refined_query[:80]}'")
+                current_question = refined_query
+                continue
+            else:
+                final_reranked = reranked
+                break
+
+        if not final_reranked:
             return {
-                "answer": "No relevant evidence found. Try broader search terms.",
+                "answer": "No relevant evidence found. Try different search terms.",
                 "citations": [],
                 "chunks": [],
                 "latency_ms": round((time.time() - start) * 1000),
-                "retrieval_debug": {
-                    "vector": 0,
-                    "bm25": 0,
-                    "fused": 0,
-                    "reranked": 0,
-                },
+                "quality_report": quality_report,
+                "provider_used": "none",
+                "retrieval_debug": {"vector": 0, "bm25": 0, "reranked": 0},
             }
 
-        # LLM answer generation
-        context = format_context(reranked)
+        # Step 7: Compute difficulty → decide Flash vs Pro
+        is_cross_doc = len(set(
+            c.metadata.get("company_name", "") for c in final_reranked
+        )) > 1
+        has_table = any(
+            kw in question.lower()
+            for kw in ["table", "breakdown", "quarter", "margin", "ratio", "trend"]
+        )
+        has_contradiction = (
+            quality_report is not None
+            and quality_report.score_variance > 0.06
+        )
+
+        difficulty = compute_difficulty_score(
+            query=question,
+            detected_entities=companies or [],
+            is_cross_document=is_cross_doc,
+            has_table_intent=has_table,
+            contradiction_detected=has_contradiction,
+        )
+
+        use_hard_query = difficulty >= 0.4
+        logger.info(
+            f"Difficulty: {difficulty:.2f} → {'Gemini Pro' if use_hard_query else 'Gemini Flash'}"
+        )
+
+        # Step 8: Generate answer
+        context = format_context(final_reranked)
         prompt = ANSWER_PROMPT.format(context=context, question=question)
 
-        llm = Groq(api_key=GROQ_API_KEY)
-        response = llm.chat.completions.create(
-            model=GROQ_MODEL,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.1,
-            max_tokens=1500,
-        )
-        answer = response.choices[0].message.content
+        try:
+            answer = self.router.generate(
+                task=TaskType.REASONING,
+                prompt=prompt,
+                temperature=0.1,
+                max_tokens=1500,
+                hard_query=use_hard_query,
+            )
+            provider_used = "gemini_pro" if use_hard_query else "gemini_flash"
+        except Exception as e:
+            raise RetrievalError(f"Answer generation failed: {e}") from e
+
         latency_ms = round((time.time() - start) * 1000)
 
         return {
             "answer": answer,
-            "citations": build_citations(reranked),
-            "chunks": reranked,
+            "citations": build_citations(final_reranked),
+            "chunks": final_reranked,
             "latency_ms": latency_ms,
+            "quality_report": quality_report,
+            "provider_used": provider_used,
+            "difficulty_score": difficulty,
             "retrieval_debug": {
                 "vector_results": len(vector_results),
                 "bm25_results": len(bm25_results),
                 "fused_results": len(fused),
-                "reranked": len(reranked),
+                "reranked": len(final_reranked),
                 "metadata_filter": metadata_filter,
+                "quality_confidence": (
+                    quality_report.overall_confidence if quality_report else 0.0
+                ),
+                "retrieval_cycles": cycle + 1,
             },
         }
 
 
 if __name__ == "__main__":
+    import logging
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s | %(name)s | %(message)s")
+
     retriever = HybridRetriever(stage=2)
     stats = retriever.store.get_collection_stats()
     print(f"Stage 2 collection: {stats['total_chunks']} chunks")
-    print(f"Companies: {stats.get('companies_sampled', [])}")
 
     if stats["total_chunks"] > 0:
         result = retriever.query(
             question="What are the main risk factors for Zomato?",
             companies=["Zomato"],
         )
-        print(f"\nAnswer ({result['latency_ms']}ms):")
+        print(f"\nAnswer ({result['latency_ms']}ms via {result['provider_used']}):")
         print(result["answer"][:500])
-        print(f"\nDebug: {result['retrieval_debug']}")
+        print(f"\nQuality: {result.get('quality_report', {}).summary if result.get('quality_report') else 'N/A'}")
+        print(f"Citations: {len(result['citations'])}")
+        print(f"Debug: {result['retrieval_debug']}")
+    else:
+        print("Stage 2 not indexed yet. Run: python scripts/index_documents_stage2.py")

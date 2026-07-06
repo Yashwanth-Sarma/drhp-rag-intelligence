@@ -75,10 +75,9 @@ def main(extract_all: bool = False) -> None:
         print("Use --all to process every section (uses more tokens)")
 
     processed = extractor.extract_from_chunks(
-        chunks=chunks,
-        target_sections=target_sections,
-        delay_seconds=3.0,
-    )
+    chunks=chunks,
+    sections_filter=target_sections,
+)
     print(f"\nSession complete. Processed: {processed} chunks.")
     show_stats()
 
