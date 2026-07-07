@@ -60,7 +60,7 @@ class ContextualChunker:
     """
 
     # 3 seconds between calls = 20 RPM, stays safely under all provider limits
-    DELAY_BETWEEN_CALLS: float = 5.0
+    DELAY_BETWEEN_CALLS: float = 12.0
 
     def __init__(self) -> None:
         self.router = get_router()

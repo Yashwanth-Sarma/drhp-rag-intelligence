@@ -2,16 +2,22 @@
 src/knowledge_graph/entity_extractor.py
 
 Extracts financial entities and relationships from document chunks.
-Uses ProviderRouter (Cerebras) instead of direct Groq calls.
-Fully resumable — tracks processed chunk_ids in a progress file.
-Targets key sections only to conserve API tokens.
+
+Key improvements:
+- BATCHING: 5 chunks per LLM call instead of 1 — 5x fewer API calls
+- Full chunk text up to 4000 chars (not truncated to 700)
+- Progress saved after EVERY chunk — no data loss on crash
+- JSONL flushed + fsync'd after every write for crash safety
+- Duplicate detection via both progress file AND JSONL scan
+- Batched runtime: ~48 min for 1178 chunks vs ~4 hours single-chunk
 """
 
 import json
+import os
 import time
 import logging
-from typing import Optional
 from pathlib import Path
+from typing import Optional
 
 from langchain_core.documents import Document
 
@@ -26,7 +32,6 @@ ENTITIES_DIR.mkdir(parents=True, exist_ok=True)
 ENTITIES_FILE = ENTITIES_DIR / "extracted_entities.jsonl"
 PROGRESS_FILE = ENTITIES_DIR / "extraction_progress.json"
 
-# Sections most likely to contain useful entities and relationships
 HIGH_VALUE_SECTIONS = [
     "Risk Factors",
     "Business Overview",
@@ -38,44 +43,86 @@ HIGH_VALUE_SECTIONS = [
     "Industry Overview",
 ]
 
-EXTRACTION_PROMPT = """You are a financial document analyst. Extract structured entities and relationships from the chunk below.
+CALL_DELAY_SECONDS: float = 12.0
+BATCH_SIZE: int = 5
+MAX_CHARS_PER_CHUNK: int = 4000
 
-Return ONLY valid JSON in this exact format with no extra text:
-{{
-  "entities": [
-    {{"name": "entity name", "type": "COMPANY|PERSON|METRIC|PRODUCT|REGULATOR|SUBSIDIARY", "value": "optional numeric value or description"}}
-  ],
-  "relationships": [
-    {{"from": "entity1", "relation": "OWNS|COMPETES_WITH|INVESTED_IN|REGULATED_BY|ACQUIRED|REPORTED|PART_OF", "to": "entity2", "context": "one sentence context"}}
-  ]
-}}
+BATCH_EXTRACTION_PROMPT = """Extract financial entities and relationships from each numbered chunk below.
 
-If nothing meaningful: {{"entities": [], "relationships": []}}
+Return ONLY valid JSON — no explanation, no markdown, just the JSON array.
 
-DOCUMENT CONTEXT:
-Company: {company_name} | Type: {doc_type} | Year: {year} | Section: {section} | Page: {page_number}
+Format:
+[
+  {{
+    "chunk_index": 1,
+    "entities": [
+      {{"name": "entity name", "type": "COMPANY|PERSON|METRIC|PRODUCT|REGULATOR|SUBSIDIARY", "value": "optional"}}
+    ],
+    "relationships": [
+      {{"from": "entity1", "relation": "OWNS|COMPETES_WITH|INVESTED_IN|REGULATED_BY|ACQUIRED|REPORTED|PART_OF|OPERATES_IN", "to": "entity2", "context": "one sentence"}}
+    ]
+  }}
+]
 
-TEXT:
-{chunk_text}
+If a chunk has nothing meaningful: {{"chunk_index": N, "entities": [], "relationships": []}}
 
-JSON:"""
+CHUNKS:
+{chunks_block}
+
+JSON array:"""
+
+
+def _format_chunk_for_batch(index: int, chunk: Document) -> str:
+    meta = chunk.metadata
+    text = meta.get("original_text", chunk.page_content)[:MAX_CHARS_PER_CHUNK]
+    return (
+        f"[CHUNK {index}]\n"
+        f"Company: {meta.get('company_name', 'Unknown')} | "
+        f"Type: {meta.get('doc_type', 'Unknown')} | "
+        f"Year: {meta.get('year', 'Unknown')} | "
+        f"Section: {meta.get('section', 'Unknown')} | "
+        f"Page: {meta.get('page_number', 'Unknown')}\n"
+        f"{text}"
+    )
+
+
+def _load_existing_jsonl_chunk_ids() -> set[str]:
+    """
+    Scan JSONL file and return all chunk_ids already written.
+    Used to prevent duplicates if progress file is ever lost.
+    """
+    if not ENTITIES_FILE.exists():
+        return set()
+    ids: set[str] = set()
+    with open(ENTITIES_FILE, encoding="utf-8") as f:
+        for line in f:
+            try:
+                record = json.loads(line)
+                cid = record.get("chunk_id")
+                if cid:
+                    ids.add(cid)
+            except Exception:
+                continue
+    return ids
 
 
 class EntityExtractor:
     """
-    Extracts financial entities from document chunks using the ProviderRouter.
-    Routes to Cerebras (1M tokens/day) for bulk extraction work.
-    Fully resumable — tracks progress per chunk_id.
-    """
+    Extracts financial entities from document chunks via batched LLM calls.
 
-    DELAY_BETWEEN_CALLS: float = 6.0
+    Batching: 5 chunks per call reduces API calls by 5x.
+    Crash safety: progress saved and JSONL fsync'd after every chunk.
+    Resumable: restarts pick up exactly where they left off.
+    """
 
     def __init__(self) -> None:
         self.router = get_router()
-        logger.info("EntityExtractor initialized")
+        logger.info(
+            "EntityExtractor initialized",
+            extra={"providers": self.router.available_providers()},
+        )
 
     def _load_progress(self) -> set[str]:
-        """Load set of already-processed chunk_ids from progress file."""
         if not PROGRESS_FILE.exists():
             return set()
         try:
@@ -83,16 +130,15 @@ class EntityExtractor:
                 data = json.load(f)
             return set(data.get("processed_chunk_ids", []))
         except Exception as e:
-            logger.warning(f"Could not load progress file: {e}. Starting fresh.")
+            logger.warning(f"Could not load progress file: {e}. Will use JSONL scan.")
             return set()
 
     def _save_progress(self, processed_ids: set[str]) -> None:
-        """Save progress so extraction is always resumable."""
         with open(PROGRESS_FILE, "w") as f:
             json.dump({"processed_chunk_ids": list(processed_ids)}, f)
 
     def _append_to_jsonl(self, chunk_id: str, data: dict, meta: dict) -> None:
-        """Append one extraction result to the JSONL output file."""
+        """Write one record to JSONL, flush, and fsync for crash safety."""
         record = {
             "chunk_id": chunk_id,
             "company_name": meta.get("company_name"),
@@ -105,59 +151,73 @@ class EntityExtractor:
         }
         with open(ENTITIES_FILE, "a", encoding="utf-8") as f:
             f.write(json.dumps(record) + "\n")
+            f.flush()
+            os.fsync(f.fileno())
 
-    def extract_from_chunk(self, chunk: Document) -> dict:
+    def _extract_batch(self, chunks: list[Document]) -> list[dict]:
         """
-        Extract entities and relationships from one chunk.
-        Returns dict with 'entities' and 'relationships'.
-        Returns empty dict if extraction fails — never raises.
+        Send one batch of chunks to the LLM, get back extraction results.
+        Returns empty results for all chunks if the call fails entirely.
         """
-        meta = chunk.metadata
-        prompt = EXTRACTION_PROMPT.format(
-            company_name=meta.get("company_name", "Unknown"),
-            doc_type=meta.get("doc_type", "Unknown"),
-            year=meta.get("year", "Unknown"),
-            section=meta.get("section", "Unknown"),
-            page_number=meta.get("page_number", "Unknown"),
-            chunk_text=chunk.page_content[:700],
+        chunks_block = "\n\n".join(
+            _format_chunk_for_batch(i + 1, chunk)
+            for i, chunk in enumerate(chunks)
         )
+        prompt = BATCH_EXTRACTION_PROMPT.format(chunks_block=chunks_block)
+        estimated_output_tokens = len(chunks) * 150
 
         try:
             raw = self.router.generate(
                 task=TaskType.ENTITY_EXTRACTION,
                 prompt=prompt,
                 temperature=0.0,
-                max_tokens=400,
+                max_tokens=min(2000, estimated_output_tokens + 500),
             )
-            # Strip markdown fences if model adds them
+
             text = raw.strip()
             if "```" in text:
                 parts = text.split("```")
                 text = parts[1] if len(parts) > 1 else parts[0]
                 if text.startswith("json"):
                     text = text[4:]
+            text = text.strip()
 
-            result = json.loads(text.strip())
-            # Validate structure
-            if not isinstance(result.get("entities"), list):
-                result["entities"] = []
-            if not isinstance(result.get("relationships"), list):
-                result["relationships"] = []
-            return result
+            result = json.loads(text)
+
+            if not isinstance(result, list):
+                logger.warning("Batch returned non-list — wrapping or discarding")
+                result = [result] if isinstance(result, dict) else []
+
+            validated = []
+            for entry in result:
+                if not isinstance(entry, dict):
+                    continue
+                validated.append({
+                    "chunk_index": entry.get("chunk_index", 0),
+                    "entities": (
+                        entry.get("entities", [])
+                        if isinstance(entry.get("entities"), list) else []
+                    ),
+                    "relationships": (
+                        entry.get("relationships", [])
+                        if isinstance(entry.get("relationships"), list) else []
+                    ),
+                })
+            return validated
 
         except json.JSONDecodeError:
-            logger.debug(
-                f"JSON parse failed for chunk {meta.get('chunk_id')} — "
-                "returning empty (chunk may have no structured entities)"
-            )
-            return {"entities": [], "relationships": []}
+            logger.debug("Batch JSON parse failed — chunk may have no structured entities")
+            return [
+                {"chunk_index": i + 1, "entities": [], "relationships": []}
+                for i in range(len(chunks))
+            ]
 
         except Exception as e:
-            logger.warning(
-                f"Extraction failed for chunk {meta.get('chunk_id')}: "
-                f"{str(e)[:80]}"
-            )
-            return {"entities": [], "relationships": []}
+            logger.warning(f"Batch extraction error: {str(e)[:100]}")
+            return [
+                {"chunk_index": i + 1, "entities": [], "relationships": []}
+                for i in range(len(chunks))
+            ]
 
     def extract_from_chunks(
         self,
@@ -165,116 +225,156 @@ class EntityExtractor:
         sections_filter: Optional[list[str]] = None,
     ) -> int:
         """
-        Extract entities from all chunks. Fully resumable.
+        Extract entities from all chunks using batched LLM calls.
 
         Args:
-            chunks:          All chunks from load_all_pdfs()
-            sections_filter: Only process these sections. Defaults to HIGH_VALUE_SECTIONS.
-                             Pass None to process all sections.
+            chunks:          All chunks from load_all_pdfs().
+            sections_filter: Sections to process.
+                             None  = HIGH_VALUE_SECTIONS (saves ~60% tokens)
+                             []    = ALL sections
 
         Returns:
-            Number of chunks processed in this session.
+            Number of chunks processed this session.
         """
-        filter_sections = sections_filter if sections_filter is not None else HIGH_VALUE_SECTIONS
-
-        # Filter to target sections
-        if filter_sections:
-            filtered = [
-                c for c in chunks
-                if c.metadata.get("section") in filter_sections
-            ]
+        if sections_filter is None:
+            target_sections = HIGH_VALUE_SECTIONS
+        elif len(sections_filter) == 0:
+            target_sections = None
         else:
-            filtered = chunks
+            target_sections = sections_filter
 
-        # Skip already-processed chunks
-        processed_ids = self._load_progress()
+        filtered = (
+            [c for c in chunks if c.metadata.get("section") in target_sections]
+            if target_sections else chunks
+        )
+
+        # Combine progress file + JSONL scan for maximum duplicate safety
+        progress_ids = self._load_progress()
+        jsonl_ids = _load_existing_jsonl_chunk_ids()
+        processed_ids = progress_ids | jsonl_ids
+
+        if len(jsonl_ids) > len(progress_ids):
+            logger.info(
+                f"JSONL has {len(jsonl_ids)} records, progress file has {len(progress_ids)}. "
+                "Using union as source of truth."
+            )
+
         pending = [
             c for c in filtered
             if c.metadata.get("chunk_id") not in processed_ids
         ]
 
         already_done = len(filtered) - len(pending)
+        total_batches = (len(pending) + BATCH_SIZE - 1) // BATCH_SIZE
+        est_minutes = round(total_batches * CALL_DELAY_SECONDS / 60, 1)
 
         print(f"\nEntity extraction plan:")
-        print(f"  Chunks in target sections:  {len(filtered)}")
-        print(f"  Already processed:          {already_done} (skipping)")
-        print(f"  To process now:             {len(pending)}")
-        print(f"  Estimated tokens:           ~{len(pending) * 450:,}")
-        print(f"  Provider status:            {self.router.status_report()}")
+        print(f"  Target sections:     {target_sections or 'ALL'}")
+        print(f"  Chunks in scope:     {len(filtered)}")
+        print(f"  Already processed:   {already_done} (skipping)")
+        print(f"  Pending chunks:      {len(pending)}")
+        print(f"  Batch size:          {BATCH_SIZE} chunks per LLM call")
+        print(f"  Total batches:       {total_batches}")
+        print(f"  Delay per batch:     {CALL_DELAY_SECONDS}s")
+        print(f"  Estimated time:      ~{est_minutes} min")
+        print(f"  Provider status:     {self.router.status_report()}\n")
 
         if not pending:
-            print("\nAll chunks already processed.")
+            print("All chunks already processed.")
             self._print_stats()
             return 0
 
         processed_this_session = 0
         total_entities = 0
         total_rels = 0
+        batch_count = 0
 
-        for i, chunk in enumerate(pending, 1):
-            chunk_id = chunk.metadata.get("chunk_id", f"unknown_{i}")
+        for batch_start in range(0, len(pending), BATCH_SIZE):
+            batch = pending[batch_start: batch_start + BATCH_SIZE]
+            batch_count += 1
 
             try:
-                data = self.extract_from_chunk(chunk)
+                batch_results = self._extract_batch(batch)
+                results_by_index = {r["chunk_index"]: r for r in batch_results}
 
-                self._append_to_jsonl(chunk_id, data, chunk.metadata)
-                processed_ids.add(chunk_id)
-                processed_this_session += 1
+                for i, chunk in enumerate(batch):
+                    chunk_id = chunk.metadata.get("chunk_id", f"unknown_{batch_start + i}")
 
-                e_count = len(data.get("entities", []))
-                r_count = len(data.get("relationships", []))
-                total_entities += e_count
-                total_rels += r_count
+                    if chunk_id in processed_ids:
+                        continue
 
-                # Save progress every 10 chunks
-                if i % 10 == 0:
+                    result = results_by_index.get(
+                        i + 1, {"entities": [], "relationships": []}
+                    )
+
+                    self._append_to_jsonl(chunk_id, result, chunk.metadata)
+
+                    processed_ids.add(chunk_id)
                     self._save_progress(processed_ids)
+                    processed_this_session += 1
 
-                if i % 50 == 0 or i == len(pending):
+                    total_entities += len(result.get("entities", []))
+                    total_rels += len(result.get("relationships", []))
+
+                if batch_count % 10 == 0 or batch_start + BATCH_SIZE >= len(pending):
+                    chunks_done = min(batch_start + BATCH_SIZE, len(pending))
+                    pct = round(chunks_done / len(pending) * 100)
+                    eta = round((total_batches - batch_count) * CALL_DELAY_SECONDS / 60, 1)
                     print(
-                        f"  [{i}/{len(pending)}] "
-                        f"{round(i / len(pending) * 100)}% | "
+                        f"  Batch {batch_count}/{total_batches} | "
+                        f"Chunks: {chunks_done}/{len(pending)} ({pct}%) | "
                         f"Entities: {total_entities} | "
                         f"Relations: {total_rels} | "
+                        f"ETA: {eta}min | "
                         f"Status: {self.router.status_report()}"
                     )
 
-                time.sleep(self.DELAY_BETWEEN_CALLS)
+                time.sleep(CALL_DELAY_SECONDS)
 
             except KeyboardInterrupt:
-                self._save_progress(processed_ids)
-                print(f"\nInterrupted at {i}/{len(pending)}. Progress saved.")
-                print("Restart to continue from this point.")
+                print(
+                    f"\nInterrupted after batch {batch_count}. "
+                    f"{processed_this_session} chunks saved."
+                )
+                print("Restart anytime — progress is fully saved.")
+                self._print_stats()
                 return processed_this_session
 
             except Exception as e:
-                logger.error(f"Unexpected error on chunk {chunk_id}: {e}")
+                logger.error(f"Unexpected error in batch {batch_count}: {e}")
                 continue
 
-        self._save_progress(processed_ids)
-        print(f"\nExtraction complete: {processed_this_session} chunks, {total_entities} entities, {total_rels} relationships")
+        print(f"\nExtraction complete!")
+        print(f"  Processed this session: {processed_this_session}")
+        print(f"  Total entities:         {total_entities}")
+        print(f"  Total relationships:    {total_rels}")
         self._print_stats()
         return processed_this_session
 
     def _print_stats(self) -> None:
-        """Print current extraction statistics."""
         if not ENTITIES_FILE.exists():
             print("No entities extracted yet.")
             return
         entity_count = 0
         rel_count = 0
-        companies = set()
+        chunk_count = 0
+        companies: set[str] = set()
         with open(ENTITIES_FILE, encoding="utf-8") as f:
             for line in f:
                 try:
                     r = json.loads(line)
                     entity_count += len(r.get("entities", []))
                     rel_count += len(r.get("relationships", []))
+                    chunk_count += 1
                     if r.get("company_name"):
                         companies.add(r["company_name"])
                 except Exception:
                     continue
-        print(f"\nExtraction stats: {entity_count} entities, {rel_count} relationships, {len(companies)} companies")
-
-
-from typing import Optional  # noqa: E402 — placed here to avoid circular at top
+        print(
+            f"\nEntity Extraction Progress:"
+            f"\n  Chunks in JSONL:     {chunk_count}"
+            f"\n  Entities extracted:  {entity_count}"
+            f"\n  Relationships found: {rel_count}"
+            f"\n  Companies covered:   {sorted(companies)}"
+            f"\n  Output file:         {ENTITIES_FILE}"
+        )
