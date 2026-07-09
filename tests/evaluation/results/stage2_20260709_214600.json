@@ -1,0 +1,43 @@
+{
+  "stage": 2,
+  "timestamp": "2026-07-09T21:46:00.858797",
+  "total_questions": 5,
+  "failed_questions": 0,
+  "faithfulness": 0.6,
+  "answer_relevancy": 1.0,
+  "context_precision": 0.52,
+  "context_recall": 0.6,
+  "avg_latency_ms": 10207,
+  "individual_scores": [
+    {
+      "faithfulness": 0.5,
+      "answer_relevancy": 1.0,
+      "context_precision": 0.8,
+      "context_recall": 0.5
+    },
+    {
+      "faithfulness": 0.5,
+      "answer_relevancy": 1.0,
+      "context_precision": 0.2,
+      "context_recall": 0.5
+    },
+    {
+      "faithfulness": 0.5,
+      "answer_relevancy": 1.0,
+      "context_precision": 0.5,
+      "context_recall": 0.5
+    },
+    {
+      "faithfulness": 0.5,
+      "answer_relevancy": 1.0,
+      "context_precision": 0.6,
+      "context_recall": 0.5
+    },
+    {
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0,
+      "context_precision": 0.5,
+      "context_recall": 1.0
+    }
+  ]
+}

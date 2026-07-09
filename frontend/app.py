@@ -224,10 +224,12 @@ def render_research_blueprint(
 
         with col2:
             st.markdown("**Analysis Type**")
-            analysis_type = st.selectbox(
-                "What kind of analysis?",
+            analysis_types = st.multiselect(
+                "What kind of analysis? (select all that apply)",
                 ["Risk Analysis", "Financial Performance", "Company Overview",
-                 "Peer Comparison", "IPO Analysis", "Custom"],
+                "Peer Comparison", "IPO Analysis", "Executive Summary",
+                "Litigation & Legal", "Management Background", "Custom"],
+                default=["Financial Performance"],
                 label_visibility="collapsed",
             )
 
@@ -507,105 +509,206 @@ def main():
     if not generate:
         return
 
-    # Show execution plan summary before running
-    with st.expander("📋 Execution Plan (running now)", expanded=True):
-        companies_str = ", ".join(blueprint["companies"]) if blueprint["companies"] else "All indexed companies"
-        docs_str = ", ".join(blueprint["doc_types"]) if blueprint["doc_types"] else "All document types"
-        stage_str = "Stage 2 Contextual Hybrid" if blueprint["use_stage2"] else "Stage 1 Baseline"
+    # Show decomposition plan first
+    progress_bar = st.progress(0, text="Analyzing query...")
 
-        st.markdown(f"""
-        | Parameter | Value |
-        |-----------|-------|
-        | Companies | {companies_str} |
-        | Documents | {docs_str} |
-        | Analysis Type | {blueprint['analysis_type']} |
-        | Pipeline | {stage_str} |
-        | Detail Level | {blueprint['detail_level']} |
-        | Hard Query Mode | {'Yes (Gemini Pro)' if blueprint['hard_query'] else 'No (Gemini Flash)'} |
-        """)
+    from src.agents.query_decomposer import QueryDecomposer
+    from src.agents.financial_extractor import extract_metrics_from_chunks, metrics_to_chart_data
+    from src.agents.report_composer import ReportComposer
+    import plotly.graph_objects as go
 
-    # Build metadata filter
-    metadata_filter = build_filter(
-        companies=blueprint["companies"],
-        doc_types=blueprint["doc_types"],
+    decomposer = QueryDecomposer()
+    decomposed = decomposer.decompose(
+        query=question,
+        available_companies=available_companies,
+        analysis_types=blueprint.get("analysis_types", ["Financial Performance"]),
     )
 
-    # Run retrieval and generation
-    progress_bar = st.progress(0, text="Initializing retrieval pipeline...")
-    status_text = st.empty()
+    # Show execution plan
+    with st.expander("📋 Research Blueprint — Execution Plan", expanded=True):
+        st.markdown(f"**Detected intent:** {', '.join(decomposed.detected_intents)}")
+        st.markdown(f"**Companies identified:** {', '.join(decomposed.detected_companies) or 'None detected'}")
+        st.markdown(f"**Query complexity:** {decomposed.complexity}")
+        st.markdown(f"**Requires charts:** {'Yes' if decomposed.requires_charts else 'No'}")
+        st.markdown(f"**Comparison query:** {'Yes' if decomposed.is_comparison else 'No'}")
+        st.divider()
+        st.markdown(f"**{len(decomposed.tasks)} retrieval tasks planned:**")
+        for task in decomposed.tasks:
+            st.markdown(
+                f"- **{task.task_id}** [{task.output_type}]: {task.sub_question} "
+                f"| Companies: {task.companies} | Sections: {task.sections}"
+            )
+
+    progress_bar.progress(15, text=f"Running {len(decomposed.tasks)} retrieval tasks...")
+
+    # Run retrieval for each task
+    chunks_per_task = {}
+    all_chunks = []
+    all_citations = []
+    start_time = time.time()
 
     try:
-        start = time.time()
+        for i, task in enumerate(decomposed.tasks):
+            progress_pct = 15 + int((i / len(decomposed.tasks)) * 40)
+            progress_bar.progress(progress_pct, text=f"Retrieving: {task.sub_question[:60]}...")
 
-        progress_bar.progress(10, text="Connecting to vector store...")
-
-        if blueprint["use_stage2"] and stage2_available:
-            retriever = HybridRetriever(stage=2)
-            progress_bar.progress(25, text="Running hybrid BM25 + vector retrieval...")
-            result = retriever.query(
-                question=question,
-                companies=blueprint["companies"],
-                doc_types=blueprint["doc_types"],
-                hard_query=blueprint["hard_query"],
-            )
-        else:
-            retriever = BaseRetriever()
-            progress_bar.progress(25, text="Running vector similarity retrieval...")
-            result = retriever.query(
-                question=question,
-                metadata_filter=metadata_filter,
-                hard_query=blueprint.get("hard_query", False),
+            from src.retrieval.metadata_filter import build_filter
+            task_filter = build_filter(
+                companies=task.companies,
+                doc_types=task.doc_types,
+                sections=task.sections,
             )
 
-        progress_bar.progress(60, text="Assembling evidence chains...")
+            if blueprint["use_stage2"] and stage2_available:
+                retriever = HybridRetriever(stage=2)
+                result = retriever.query(
+                    question=task.sub_question,
+                    companies=task.companies,
+                    doc_types=task.doc_types,
+                    hard_query=decomposed.is_comparison,
+                )
+            else:
+                retriever = BaseRetriever()
+                result = retriever.query(
+                    question=task.sub_question,
+                    metadata_filter=task_filter,
+                )
+
+            chunks_per_task[task.task_id] = result["chunks"]
+            all_chunks.extend(result["chunks"])
+            all_citations.extend(result["citations"])
+
+        progress_bar.progress(60, text="Extracting financial metrics...")
+
+        # Extract structured metrics
+        metrics = extract_metrics_from_chunks(all_chunks)
+
+        progress_bar.progress(70, text="Composing report sections...")
+
+        # Compose full report
+        composer = ReportComposer()
+        report = composer.compose_report(
+            query=question,
+            decomposed=decomposed,
+            chunks_per_task=chunks_per_task,
+            metrics=metrics,
+            analysis_types=blueprint.get("analysis_types", ["Financial Performance"]),
+            total_latency_ms=round((time.time() - start_time) * 1000),
+        )
+
+        progress_bar.progress(90, text="Assembling evidence and rendering...")
 
         assembled = assemble_evidence(
             question=question,
-            answer=result["answer"],
-            chunks=result["chunks"],
-            citations=result["citations"],
-            provider_used=result.get("provider_used", "unknown"),
-            latency_ms=result.get("latency_ms", 0),
-            retrieval_debug=result.get("retrieval_debug", {}),
+            answer=report.executive_summary + "\n\n" + "\n\n".join(
+                s.content for s in report.sections
+            ),
+            chunks=all_chunks[:10],
+            citations=report.all_citations,
+            provider_used=report.provider_used,
+            latency_ms=report.total_latency_ms,
         )
 
-        progress_bar.progress(90, text="Rendering report...")
-        time.sleep(0.2)
         progress_bar.progress(100, text="Complete!")
-        time.sleep(0.3)
+        time.sleep(0.2)
         progress_bar.empty()
-        status_text.empty()
+
+        # Render report
+        st.divider()
+        st.markdown(f"## 📊 Research Report: {', '.join(report.companies_covered) or 'Financial Analysis'}")
+
+        conf_badge = get_confidence_badge(report.overall_confidence)
+        st.markdown(
+            f"**Confidence:** {conf_badge} · "
+            f"**Sections:** {len(report.sections)} · "
+            f"**Citations:** {len(report.all_citations)} · "
+            f"**Latency:** {report.total_latency_ms}ms",
+            unsafe_allow_html=True,
+        )
 
         st.divider()
+
+        # Executive summary
+        st.markdown("### 📋 Executive Summary")
+        st.markdown(report.executive_summary)
+
+        # Charts from extracted metrics
+        if report.chart_specs and decomposed.requires_charts:
+            st.divider()
+            st.markdown("### 📈 Financial Charts")
+            chart_cols = st.columns(min(2, len(report.chart_specs)))
+            for idx, spec in enumerate(report.chart_specs[:4]):
+                with chart_cols[idx % 2]:
+                    data = spec["data"]
+                    if data and data.get("series"):
+                        fig = go.Figure()
+                        for company, values in data["series"].items():
+                            fig.add_trace(go.Bar(
+                                name=company,
+                                x=data["periods"],
+                                y=values,
+                                text=[f"₹{v:.0f}Cr" if v else "N/A" for v in values],
+                                textposition="outside",
+                            ))
+                        fig.update_layout(
+                            title=spec["title"],
+                            xaxis_title="Period",
+                            yaxis_title=f"₹ {data['unit']}",
+                            template="plotly_dark",
+                            height=350,
+                            showlegend=len(data["series"]) > 1,
+                        )
+                        st.plotly_chart(fig, use_container_width=True)
+                        st.caption(f"*Data sourced from retrieved documents*")
+
+        # Sections
+        st.divider()
+        for section in report.sections:
+            st.markdown(f"### {section.title}")
+            st.markdown(section.content)
+            if section.citations:
+                with st.expander(f"📎 {len(section.citations)} citations", expanded=False):
+                    for c in section.citations:
+                        st.markdown(
+                            f"**[{c['citation_index']}]** {c['company_name']} | "
+                            f"{c['doc_type']} {c['year']} | "
+                            f"Page {c['page_number']} | "
+                            f"Section: {c['section']} | "
+                            f"Confidence: {c['confidence']:.0%}"
+                        )
+                        st.markdown(f"> {c['text_excerpt'][:200]}...")
+                        st.divider()
+            st.divider()
+
+        # Evidence explorer
         render_answer_with_evidence(assembled, blueprint)
 
-        # Download button for the report
-        st.divider()
-        report_text = f"# FinSight Research Report\n\n**Query:** {question}\n\n"
-        report_text += f"**Companies:** {companies_str}\n"
-        report_text += f"**Generated via:** {assembled.provider_used}\n"
-        report_text += f"**Confidence:** {assembled.overall_confidence:.0%}\n\n"
-        report_text += "---\n\n"
-        report_text += assembled.answer
-        report_text += "\n\n---\n\n## Citations\n\n"
-        for c in assembled.citations:
-            report_text += (
+        # Download
+        full_report_text = f"# FinSight Research Report\n\n"
+        full_report_text += f"**Query:** {question}\n\n"
+        full_report_text += f"**Companies:** {', '.join(report.companies_covered)}\n"
+        full_report_text += f"**Confidence:** {report.overall_confidence:.0%}\n\n---\n\n"
+        full_report_text += f"## Executive Summary\n\n{report.executive_summary}\n\n"
+        for section in report.sections:
+            full_report_text += f"## {section.title}\n\n{section.content}\n\n"
+        full_report_text += "## Citations\n\n"
+        for c in report.all_citations:
+            full_report_text += (
                 f"[{c['citation_index']}] {c['company_name']} | "
                 f"{c['doc_type']} {c['year']} | "
-                f"Page {c['page_number']} | "
-                f"Section: {c['section']}\n"
+                f"Page {c['page_number']}\n"
             )
 
         st.download_button(
-            label="⬇️ Download Report as Text",
-            data=report_text,
-            file_name=f"finsight_report_{int(time.time())}.md",
+            "⬇️ Download Full Report",
+            data=full_report_text,
+            file_name=f"finsight_{int(time.time())}.md",
             mime="text/markdown",
         )
 
     except Exception as e:
         progress_bar.empty()
-        st.error(f"Query failed: {str(e)}")
+        st.error(f"Report generation failed: {str(e)}")
         st.exception(e)
 
 
