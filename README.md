@@ -1,5 +1,9 @@
 # FinSight
 
+**Current:** [Stage 09 source context](docs/stages/09_SOURCE_CONTEXT.md), 63 passing
+tests, source-bound development evaluation and inspectable nearby passages.
+Financial table interpretation and live Qwen validation remain outstanding.
+
 **Latest verified stage:** [Stage 08](docs/stages/08_RETRIEVAL_VERIFICATION.md).
 58 tests pass; the dense index contains 18,986 windows. Real-filing retrieval,
 OKF/API integration and citation rendering passed smoke checks. The six-case

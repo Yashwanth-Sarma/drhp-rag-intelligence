@@ -26,7 +26,16 @@ $('search-form').onsubmit=e=>{e.preventDefault();busy(e.currentTarget.querySelec
   $('results').replaceChildren(node('p',r.message,'warning'));
   if(r.retrieval?.dense_status==='stale_rebuild_required')$('results').append(node('p','The semantic index needs rebuilding after corpus changes. These results use keyword search.','warning'));
   if(r.corpus.unknown_date_excluded)$('results').append(node('p',`${r.corpus.unknown_date_excluded} filing(s) excluded because their dates are unknown.`,'warning'));
-  r.evidence.forEach(e=>$('results').append(evidenceCard(e)));
+  r.evidence.forEach(e=>{
+    $('results').append(evidenceCard(e));
+    const context=r.source_context?.find(c=>c.anchor_id===e.id);
+    if(context?.neighbors.length){
+      const nearby=node('details');nearby.append(node('summary','Read nearby source passages'),node('p',context.limitation,'muted'));
+      context.neighbors.forEach(n=>nearby.append(evidenceCard(n)));
+      if(context.omitted_ids.length)nearby.append(node('p','Some nearby passages exceeded the context size limit. Inspect the original page.','warning'));
+      $('results').append(nearby);
+    }
+  });
   if(r.knowledge_context?.concepts.length){
     const details=node('details'),summary=node('summary','Research methodology · not company evidence');details.append(summary);
     r.knowledge_context.concepts.forEach(c=>{details.append(node('h3',c.metadata.title||c.id),node('p',`Declared review: ${c.declared_trust}. Review identity has not been authenticated.`,'muted'),node('pre',c.body,'excerpt'));});

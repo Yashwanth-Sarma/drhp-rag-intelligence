@@ -1,0 +1,46 @@
+{
+  "name": "disclosure-spans-v1",
+  "annotation": "Agent-authored development labels checked against extracted source text; no financial expert review. Alternative supporting spans are not exhaustively labelled.",
+  "cases": [
+    {
+      "id": "ola-loss-periods",
+      "company": "Ola Electric Mobility Limited",
+      "document_id": "a5b8cce713093f98ee7819e0a9fe26db",
+      "document_sha256": "61b8733a123fa1274d4854a34b65ceabab6ab4c2dd3106a20e677bdc80fa6c94",
+      "question": "Which reporting periods does Ola identify as having operating cash outflows and losses?",
+      "evidence_id": "717526241485c6f101a494c5e1f558bd",
+      "page": 32,
+      "quote": "activities in the three-months period ended June 30, 2023 and Fiscals 2023, 2022 and 2021 as shown below:"
+    },
+    {
+      "id": "ola-expansion-risk",
+      "company": "Ola Electric Mobility Limited",
+      "document_id": "a5b8cce713093f98ee7819e0a9fe26db",
+      "document_sha256": "61b8733a123fa1274d4854a34b65ceabab6ab4c2dd3106a20e677bdc80fa6c94",
+      "question": "Why might Ola's product expansion and international growth plans put pressure on profitability?",
+      "evidence_id": "897faae05c02cb9fdc520ef672afe28c",
+      "page": 32,
+      "quote": "our sales footprint across international automotive markets, could result in an increase in our operating costs."
+    },
+    {
+      "id": "swiggy-loss-history",
+      "company": "Swiggy Limited",
+      "document_id": "f8d05e110527a3b14987ae5a7fd2a11e",
+      "document_sha256": "d31935a90d8588e4db26beda025af23b5413ac1162ecc223f13539b247172807",
+      "question": "Has Swiggy disclosed a history of losses despite growing revenue?",
+      "evidence_id": "16aecc5faba3097719ee3167d0770c32",
+      "page": 39,
+      "quote": "losses in each year since our incorporation and had negative cash flows from operating activities."
+    },
+    {
+      "id": "swiggy-growth-expenses",
+      "company": "Swiggy Limited",
+      "document_id": "f8d05e110527a3b14987ae5a7fd2a11e",
+      "document_sha256": "d31935a90d8588e4db26beda025af23b5413ac1162ecc223f13539b247172807",
+      "question": "Which categories of spending does Swiggy say it incurred to support growth?",
+      "evidence_id": "16aecc5faba3097719ee3167d0770c32",
+      "page": 39,
+      "quote": "expenses to increase our user base and enhance our brand; delivery and related costs to support our delivery facilitation"
+    }
+  ]
+}

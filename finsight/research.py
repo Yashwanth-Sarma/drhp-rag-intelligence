@@ -4,6 +4,7 @@ import time
 import uuid
 from pathlib import Path
 from .contracts import EXTRACTION_VERSION
+from .source_context import source_context
 
 STOP = set('what is are was were the a an of to in for and how did does do with from about company its their it as by explain describe'.split())
 
@@ -55,8 +56,10 @@ def research(store, question, company=None, document_id=None, as_of=None):
                   provider=None, cost=0, pipeline_version=retrieval['pipeline'])
     result['retrieval']={k:v for k,v in retrieval.items() if k!='evidence'}
     result['knowledge_context']=knowledge_context(question)
+    result['source_context']=[source_context(store, e['id']) for e in evidence]
     result['corpus']=corpus_snapshot(store, company, document_id, as_of)
     result['coverage_note']='Ranked excerpts only; results do not establish support or complete disclosure coverage. Knowledge guidance is not issuer evidence.'
+    result['latency_ms']=round((time.perf_counter()-start)*1000)
     with store.connect() as c:
         c.execute('INSERT INTO runs(id,payload) VALUES (?,?)', (result['id'], json.dumps(result)))
     return result

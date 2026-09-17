@@ -2,6 +2,12 @@
 
 Updated 2026-09-16. Read this file and only the relevant stage file first.
 
+**Latest, 2026-09-17:** read [Stage 09](stages/09_SOURCE_CONTEXT.md). Source-context
+expansion and four exact-span development labels are implemented; 63 tests pass.
+GitHub checkpoint is on `codex/finsight-rag-okf-stages-01-08`, published through
+`tmp/github-publish`. Stage 09 contains the next-session prompt. Earlier states
+below are historical, not the current verification status.
+
 **Current verified status:** [Stage 08](stages/08_RETRIEVAL_VERIFICATION.md)
 supersedes the historical Stage 07 uncertainty below. The dense index is confirmed,
 58 tests pass, real-filing retrieval and API checks completed, and model hashes

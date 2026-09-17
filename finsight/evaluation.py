@@ -24,3 +24,16 @@ def page_metrics(evidence, company, pages, k=12):
 def require_dense_ready(result):
     if result.get('dense_status') != 'ready':
         raise ValueError('Hybrid evaluation requires a current dense index; fallback is not a hybrid result.')
+
+
+def validate_span_label(store, label):
+    doc = store.document(label['document_id'])
+    source = store.evidence(label['evidence_id'])
+    if not doc or doc['sha256'] != label['document_sha256']:
+        raise ValueError('Evaluation source document hash mismatch.')
+    if (not source or source['document_id'] != doc['id'] or
+        source['company'] != label['company'] or source['page'] != label['page']):
+        raise ValueError('Evaluation source scope mismatch.')
+    if not label['quote'].strip() or label['quote'] not in source['text']:
+        raise ValueError('Evaluation quote is absent from source.')
+    return source
