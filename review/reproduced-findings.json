@@ -1,0 +1,23 @@
+{
+  "scope": "Isolated pure-function reproductions, not end-to-end application tests",
+  "numeric_cleaning": {
+    "input": "Revenue\n1000\n0\n(5)\nNote text",
+    "output": "Revenue\nNote text"
+  },
+  "wrong_company_wrong_number_support": {
+    "claim": "Company A revenue was 999 in FY2025.",
+    "source": "Company B revenue was 100 in FY2023.",
+    "support_count": 1,
+    "display_confidence": 0.4167
+  },
+  "different_years_flagged_as_conflict": [
+    {
+      "chunk_a": "a",
+      "chunk_b": "c",
+      "company": "A",
+      "doc_a": "DRHP 2022 p",
+      "doc_b": "Annual_Report 2023 p",
+      "note": "Same company, different documents \u2014 verify for consistency"
+    }
+  ]
+}

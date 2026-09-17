@@ -1,3 +1,13 @@
+.runtime/
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+data/
+legacy-review/
+.env
+*.log
+tmp/
 venv/
 .env
 __pycache__/

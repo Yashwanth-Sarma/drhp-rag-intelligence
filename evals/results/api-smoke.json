@@ -1,0 +1,10 @@
+{
+  "research_run_id": "c2d8ee58-4d77-4a0d-ab41-2ba15fa7f411",
+  "report_run_id": "2ff4907b-9c4f-4392-ac46-c85cfe374897",
+  "dense_status": "ready",
+  "evidence_count": 12,
+  "knowledge_concepts": 3,
+  "source_image_bytes": 203091,
+  "report_sections": 6,
+  "limitation": "API integration smoke, not visual UI inspection or financial answer validation."
+}

@@ -1,0 +1,668 @@
+{
+  "dataset": "sebi-page-smoke-v1",
+  "limitation": "Developer-authored page-location checks, not expert-labelled answer relevance or held-out evaluation.",
+  "cases": [
+    {
+      "id": "ola-assets",
+      "company": "Ola Electric Mobility Limited",
+      "question": "summary restated consolidated balance sheet total assets",
+      "target_pages": [
+        71
+      ],
+      "dense_status": "ready",
+      "latency_ms": 3097,
+      "lexical": {
+        "page_hit_at_12": true,
+        "reciprocal_rank": 1.0,
+        "pages": [
+          71,
+          19,
+          73,
+          72,
+          308,
+          336,
+          260,
+          323,
+          258,
+          267,
+          248,
+          336
+        ],
+        "ids": [
+          "c3d33e40fb0ae1df30c9059beea0894c",
+          "b39dc34a6e906a5619b62724ed5331ef",
+          "fc84d5d6cbd607e6de69accbcc31dd47",
+          "43b59db786f52d4120f24c41f0a04b83",
+          "d7cf2ae2583691f32c43c6f1a6f1a459",
+          "f381a2d382f49728173b36af0482dccf",
+          "9ad3f1d42a53e2284955c004d7e666cf",
+          "5ee4ed373e69506e15e6666857b4aece",
+          "802d175572f5b44af89f49f02c98448e",
+          "09f236de1e2e7d2c1283d58d2258b1bf",
+          "8c8f570b43485216f9165c821f16420b",
+          "5f05f4cb79ada555f5378309003ed2e6"
+        ]
+      },
+      "hybrid": {
+        "page_hit_at_12": true,
+        "reciprocal_rank": 1.0,
+        "pages": [
+          71,
+          19,
+          73,
+          72,
+          267,
+          248,
+          236,
+          6,
+          336,
+          267,
+          333,
+          255
+        ],
+        "ids": [
+          "c3d33e40fb0ae1df30c9059beea0894c",
+          "b39dc34a6e906a5619b62724ed5331ef",
+          "fc84d5d6cbd607e6de69accbcc31dd47",
+          "43b59db786f52d4120f24c41f0a04b83",
+          "09f236de1e2e7d2c1283d58d2258b1bf",
+          "8c8f570b43485216f9165c821f16420b",
+          "1d5155d28cbd1523aeff3f81224ebbfd",
+          "c5ba35f439a0201b90752256a9a047ff",
+          "f381a2d382f49728173b36af0482dccf",
+          "f1a9a8b52c72216cec6558cc7c3ecbc9",
+          "f2b5c9c6b788771b5acd3074fbe67eae",
+          "563cab8278d18caddf9348c071c6f7c5"
+        ]
+      },
+      "reranked": {
+        "page_hit_at_12": true,
+        "reciprocal_rank": 0.5,
+        "pages": [
+          267,
+          71,
+          255,
+          70,
+          333,
+          19,
+          72,
+          255,
+          73,
+          248,
+          267,
+          272
+        ],
+        "ids": [
+          "09f236de1e2e7d2c1283d58d2258b1bf",
+          "c3d33e40fb0ae1df30c9059beea0894c",
+          "563cab8278d18caddf9348c071c6f7c5",
+          "a2322e0c246c7a9d20da643f1bcd99b8",
+          "f2b5c9c6b788771b5acd3074fbe67eae",
+          "b39dc34a6e906a5619b62724ed5331ef",
+          "43b59db786f52d4120f24c41f0a04b83",
+          "34045040991271b96b0cd50cfd5f5ea5",
+          "fc84d5d6cbd607e6de69accbcc31dd47",
+          "8c8f570b43485216f9165c821f16420b",
+          "4a437513e18542392d1a27bdda4f332e",
+          "4ffe6c3f02f8c4b1b9a43b336ee1be30"
+        ]
+      }
+    },
+    {
+      "id": "ola-financials",
+      "company": "Ola Electric Mobility Limited",
+      "question": "summary restated consolidated financial information",
+      "target_pages": [
+        70,
+        71,
+        72,
+        73
+      ],
+      "dense_status": "ready",
+      "latency_ms": 1886,
+      "lexical": {
+        "page_hit_at_12": true,
+        "reciprocal_rank": 0.5,
+        "pages": [
+          19,
+          70,
+          236,
+          6,
+          121,
+          336,
+          323,
+          73,
+          72,
+          71,
+          70,
+          62
+        ],
+        "ids": [
+          "b39dc34a6e906a5619b62724ed5331ef",
+          "a2322e0c246c7a9d20da643f1bcd99b8",
+          "1d5155d28cbd1523aeff3f81224ebbfd",
+          "c5ba35f439a0201b90752256a9a047ff",
+          "85aa3170d67b42a964908f95f09c7e94",
+          "1e9e981ede7265bd9b72bd3d460d7ef1",
+          "9b76ee7f4ca69c38d3a58d9ec2a5b2af",
+          "fc84d5d6cbd607e6de69accbcc31dd47",
+          "43b59db786f52d4120f24c41f0a04b83",
+          "c3d33e40fb0ae1df30c9059beea0894c",
+          "d02e95ed916f75a00a3c9828029dbd1c",
+          "4f00c33ee5d6680a3203faee0a7a3ca2"
+        ]
+      },
+      "hybrid": {
+        "page_hit_at_12": true,
+        "reciprocal_rank": 0.25,
+        "pages": [
+          19,
+          236,
+          6,
+          73,
+          71,
+          72,
+          70,
+          70,
+          121,
+          19,
+          4,
+          270
+        ],
+        "ids": [
+          "b39dc34a6e906a5619b62724ed5331ef",
+          "1d5155d28cbd1523aeff3f81224ebbfd",
+          "c5ba35f439a0201b90752256a9a047ff",
+          "fc84d5d6cbd607e6de69accbcc31dd47",
+          "c3d33e40fb0ae1df30c9059beea0894c",
+          "43b59db786f52d4120f24c41f0a04b83",
+          "a2322e0c246c7a9d20da643f1bcd99b8",
+          "d02e95ed916f75a00a3c9828029dbd1c",
+          "85aa3170d67b42a964908f95f09c7e94",
+          "84c05ef034700cb5d0423c361add0f8f",
+          "2d833ec07877dba32176c04c6e10b0f7",
+          "842c29e6da6a6ed52cb36d5be68c4ef3"
+        ]
+      },
+      "reranked": {
+        "page_hit_at_12": true,
+        "reciprocal_rank": 1.0,
+        "pages": [
+          70,
+          19,
+          255,
+          71,
+          323,
+          19,
+          62,
+          121,
+          236,
+          6,
+          72,
+          4
+        ],
+        "ids": [
+          "a2322e0c246c7a9d20da643f1bcd99b8",
+          "b39dc34a6e906a5619b62724ed5331ef",
+          "563cab8278d18caddf9348c071c6f7c5",
+          "c3d33e40fb0ae1df30c9059beea0894c",
+          "9b76ee7f4ca69c38d3a58d9ec2a5b2af",
+          "84c05ef034700cb5d0423c361add0f8f",
+          "4f00c33ee5d6680a3203faee0a7a3ca2",
+          "85aa3170d67b42a964908f95f09c7e94",
+          "1d5155d28cbd1523aeff3f81224ebbfd",
+          "c5ba35f439a0201b90752256a9a047ff",
+          "43b59db786f52d4120f24c41f0a04b83",
+          "2d833ec07877dba32176c04c6e10b0f7"
+        ]
+      }
+    },
+    {
+      "id": "ola-risk",
+      "company": "Ola Electric Mobility Limited",
+      "question": "risk factors losses negative cash flows",
+      "target_pages": [
+        32,
+        33,
+        34,
+        35
+      ],
+      "dense_status": "ready",
+      "latency_ms": 1436,
+      "lexical": {
+        "page_hit_at_12": true,
+        "reciprocal_rank": 1.0,
+        "pages": [
+          32,
+          260,
+          20,
+          32,
+          4,
+          334,
+          32,
+          55,
+          254,
+          336,
+          20,
+          254
+        ],
+        "ids": [
+          "6fcd1894b3ebee7112fc8b9dffab6f6f",
+          "5f23e2c851c0f39f1614940ffeed41f0",
+          "af43275ee577990cc1802044e6726682",
+          "7b572619ac795483cbe1cab68a323304",
+          "2354719976f0eee226629223f9a30dfe",
+          "518a62956f6231252b0616870614def3",
+          "717526241485c6f101a494c5e1f558bd",
+          "5195a04460ee09e1c4febce0976fd6f5",
+          "7ce5094dee3ba128743b835aeb66f903",
+          "ee3da3e50447d7f00733e31af87adffb",
+          "091ed23bf41c390625c9a5000820e8c1",
+          "8712417ff0890323806fde5d61dc04f4"
+        ]
+      },
+      "hybrid": {
+        "page_hit_at_12": true,
+        "reciprocal_rank": 0.5,
+        "pages": [
+          334,
+          32,
+          254,
+          20,
+          263,
+          57,
+          260,
+          316,
+          305,
+          294,
+          32,
+          4
+        ],
+        "ids": [
+          "518a62956f6231252b0616870614def3",
+          "6fcd1894b3ebee7112fc8b9dffab6f6f",
+          "7ce5094dee3ba128743b835aeb66f903",
+          "af43275ee577990cc1802044e6726682",
+          "c32b2763e2001f3af8a92cd69a00ed33",
+          "ea8a8f67379fa9c8e4dd096226b5dbb0",
+          "5f23e2c851c0f39f1614940ffeed41f0",
+          "d7d0207f1f76c8896cbded17da9f5330",
+          "75e2b392e776841dd135926ae6a4f2d0",
+          "2e8b7ab6065694d0f2d74a97fb87f3d4",
+          "7b572619ac795483cbe1cab68a323304",
+          "2354719976f0eee226629223f9a30dfe"
+        ]
+      },
+      "reranked": {
+        "page_hit_at_12": true,
+        "reciprocal_rank": 1.0,
+        "pages": [
+          32,
+          336,
+          291,
+          57,
+          263,
+          20,
+          4,
+          260,
+          55,
+          32,
+          260,
+          3
+        ],
+        "ids": [
+          "6fcd1894b3ebee7112fc8b9dffab6f6f",
+          "ee3da3e50447d7f00733e31af87adffb",
+          "07d2dce30e62593a13db97b14b123c18",
+          "ea8a8f67379fa9c8e4dd096226b5dbb0",
+          "c32b2763e2001f3af8a92cd69a00ed33",
+          "af43275ee577990cc1802044e6726682",
+          "2354719976f0eee226629223f9a30dfe",
+          "5f23e2c851c0f39f1614940ffeed41f0",
+          "5195a04460ee09e1c4febce0976fd6f5",
+          "7b572619ac795483cbe1cab68a323304",
+          "46533f0930c5d2c53227b90c63399976",
+          "5a6e82e287bc3d603f9997ce98e9fc70"
+        ]
+      }
+    },
+    {
+      "id": "swiggy-assets",
+      "company": "Swiggy Limited",
+      "question": "summary restated consolidated statement assets liabilities equity",
+      "target_pages": [
+        81
+      ],
+      "dense_status": "ready",
+      "latency_ms": 2243,
+      "lexical": {
+        "page_hit_at_12": true,
+        "reciprocal_rank": 1.0,
+        "pages": [
+          81,
+          85,
+          83,
+          278,
+          283,
+          352,
+          405,
+          25,
+          349,
+          276,
+          290,
+          405
+        ],
+        "ids": [
+          "eb31eebca3eef44ba8486cb9b32ef179",
+          "449a7273bb5fd2dba3f7839a19c6593f",
+          "c080c4c8ab703e30718fcf58476615ad",
+          "9bae686fd8bcb75c169c2aef9d2e976d",
+          "8646ad0808fb6a76a8958ba542a9b769",
+          "b9737d10f5f9b628069aaafff49dcf2f",
+          "964eac93c6319abcc6743c32cbc861b6",
+          "13edc4622a08840227abdcceb198272e",
+          "e223ff2744b5ba5063439bb8e7bb9836",
+          "bd9426b71d87f94705f082857c999e27",
+          "3d5d72d5a745108cbb8d2c18f5b6e6bb",
+          "afb4cd75af9890f17679f585253de69f"
+        ]
+      },
+      "hybrid": {
+        "page_hit_at_12": true,
+        "reciprocal_rank": 1.0,
+        "pages": [
+          81,
+          85,
+          83,
+          25,
+          405,
+          343,
+          349,
+          327,
+          349,
+          328,
+          376,
+          299
+        ],
+        "ids": [
+          "eb31eebca3eef44ba8486cb9b32ef179",
+          "449a7273bb5fd2dba3f7839a19c6593f",
+          "c080c4c8ab703e30718fcf58476615ad",
+          "13edc4622a08840227abdcceb198272e",
+          "964eac93c6319abcc6743c32cbc861b6",
+          "b775661a12ae46a6ca18bfa5ea84bcfb",
+          "fe8ae3ea647c4a65e56f3f47dd3a98d3",
+          "98b8980d4c8c0d749efcada8051f2296",
+          "06ff8dfb5f0ea8382336507fbc962f6a",
+          "b81c799ee900c35efcf8b7520d55f841",
+          "42e77a1d505564a1004cc0ecb3ec6d27",
+          "bea0258721c2d15dae2a2d043432b076"
+        ]
+      },
+      "reranked": {
+        "page_hit_at_12": true,
+        "reciprocal_rank": 1.0,
+        "pages": [
+          81,
+          9,
+          278,
+          352,
+          405,
+          290,
+          276,
+          349,
+          83,
+          338,
+          299,
+          25
+        ],
+        "ids": [
+          "eb31eebca3eef44ba8486cb9b32ef179",
+          "dc1d32787ec535fe6b41119d7bd43535",
+          "9bae686fd8bcb75c169c2aef9d2e976d",
+          "b9737d10f5f9b628069aaafff49dcf2f",
+          "964eac93c6319abcc6743c32cbc861b6",
+          "3d5d72d5a745108cbb8d2c18f5b6e6bb",
+          "bd9426b71d87f94705f082857c999e27",
+          "e223ff2744b5ba5063439bb8e7bb9836",
+          "c080c4c8ab703e30718fcf58476615ad",
+          "4feb0e4b14542185e4f749310422d0f4",
+          "bea0258721c2d15dae2a2d043432b076",
+          "13edc4622a08840227abdcceb198272e"
+        ]
+      }
+    },
+    {
+      "id": "swiggy-financials",
+      "company": "Swiggy Limited",
+      "question": "summary restated consolidated financial information",
+      "target_pages": [
+        80,
+        81,
+        82,
+        83
+      ],
+      "dense_status": "ready",
+      "latency_ms": 1857,
+      "lexical": {
+        "page_hit_at_12": true,
+        "reciprocal_rank": 0.5,
+        "pages": [
+          25,
+          80,
+          275,
+          159,
+          349,
+          348,
+          349,
+          85,
+          277,
+          83,
+          81,
+          80
+        ],
+        "ids": [
+          "13edc4622a08840227abdcceb198272e",
+          "faac95057eaba0a2bd7b8599aa48f87a",
+          "5fea9b90b2f98db17ec0bfb0e0e87dc2",
+          "be1446de482f712ede45be3bb1037041",
+          "0276742b6c786b1c2813c8ea5e63766e",
+          "6a36050b10359a6452e46e3065fca804",
+          "06ff8dfb5f0ea8382336507fbc962f6a",
+          "449a7273bb5fd2dba3f7839a19c6593f",
+          "a19239e8e60de46420dbcf4161c3c1fc",
+          "c080c4c8ab703e30718fcf58476615ad",
+          "eb31eebca3eef44ba8486cb9b32ef179",
+          "7f042d110bbe31d6026f72a22f103d8b"
+        ]
+      },
+      "hybrid": {
+        "page_hit_at_12": true,
+        "reciprocal_rank": 0.25,
+        "pages": [
+          25,
+          275,
+          85,
+          81,
+          83,
+          80,
+          348,
+          277,
+          80,
+          349,
+          159,
+          26
+        ],
+        "ids": [
+          "13edc4622a08840227abdcceb198272e",
+          "5fea9b90b2f98db17ec0bfb0e0e87dc2",
+          "449a7273bb5fd2dba3f7839a19c6593f",
+          "eb31eebca3eef44ba8486cb9b32ef179",
+          "c080c4c8ab703e30718fcf58476615ad",
+          "faac95057eaba0a2bd7b8599aa48f87a",
+          "6a36050b10359a6452e46e3065fca804",
+          "a19239e8e60de46420dbcf4161c3c1fc",
+          "7f042d110bbe31d6026f72a22f103d8b",
+          "0276742b6c786b1c2813c8ea5e63766e",
+          "be1446de482f712ede45be3bb1037041",
+          "b328f53b7e58eab9b21e203c9484cb2c"
+        ]
+      },
+      "reranked": {
+        "page_hit_at_12": true,
+        "reciprocal_rank": 1.0,
+        "pages": [
+          80,
+          25,
+          382,
+          278,
+          382,
+          382,
+          81,
+          159,
+          25,
+          277,
+          275,
+          83
+        ],
+        "ids": [
+          "faac95057eaba0a2bd7b8599aa48f87a",
+          "13edc4622a08840227abdcceb198272e",
+          "18d536eb774aaff4ad0970cc5d83435a",
+          "9bae686fd8bcb75c169c2aef9d2e976d",
+          "5b8562e599fb02cf2a7a0ace7bdb41c7",
+          "fcdac6b6428d7b2ae746006df4d79a5f",
+          "eb31eebca3eef44ba8486cb9b32ef179",
+          "be1446de482f712ede45be3bb1037041",
+          "479cf865c46b9f9cea0e0d720b92657e",
+          "aab82bdcfcd11a7be141409f273863ac",
+          "5fea9b90b2f98db17ec0bfb0e0e87dc2",
+          "c080c4c8ab703e30718fcf58476615ad"
+        ]
+      }
+    },
+    {
+      "id": "swiggy-risk",
+      "company": "Swiggy Limited",
+      "question": "risk factors losses negative cash flows",
+      "target_pages": [
+        39,
+        40,
+        41,
+        42
+      ],
+      "dense_status": "ready",
+      "latency_ms": 2121,
+      "lexical": {
+        "page_hit_at_12": true,
+        "reciprocal_rank": 0.3333333333333333,
+        "pages": [
+          376,
+          26,
+          39,
+          39,
+          6,
+          376,
+          26,
+          376,
+          38,
+          340,
+          85,
+          355
+        ],
+        "ids": [
+          "649b2e4ed8e5803966a363d2cc49db26",
+          "0027b41151929f8753d1c08575aee4f8",
+          "16aecc5faba3097719ee3167d0770c32",
+          "e39dcd58279b851b92d4865162328ab1",
+          "d93a3d74d515c139736eb25cb1ba5797",
+          "c524693b038d2447a5bf36a0bb9d17dc",
+          "b9c49255b4d2a650fd17defdb3189b35",
+          "42e77a1d505564a1004cc0ecb3ec6d27",
+          "b5433323af9484556d3f5cceced8161c",
+          "850698a3f95bb0bee4db0127184d8f44",
+          "449a7273bb5fd2dba3f7839a19c6593f",
+          "b32491f5f76845b1d93acaacae99c1ff"
+        ]
+      },
+      "hybrid": {
+        "page_hit_at_12": true,
+        "reciprocal_rank": 0.14285714285714285,
+        "pages": [
+          376,
+          376,
+          38,
+          26,
+          287,
+          380,
+          39,
+          380,
+          340,
+          39,
+          361,
+          6
+        ],
+        "ids": [
+          "649b2e4ed8e5803966a363d2cc49db26",
+          "c524693b038d2447a5bf36a0bb9d17dc",
+          "b5433323af9484556d3f5cceced8161c",
+          "0027b41151929f8753d1c08575aee4f8",
+          "0e63bb985a783861b95d11b48da250e1",
+          "58961f993a66cf3620949c6fe08e8d93",
+          "16aecc5faba3097719ee3167d0770c32",
+          "7593c26a9d876f22870aedb77e4b339a",
+          "7a1780c208b5c4b87b46fbd1194cb1a0",
+          "e39dcd58279b851b92d4865162328ab1",
+          "a736dc636879f3a728914e195eadfae7",
+          "d93a3d74d515c139736eb25cb1ba5797"
+        ]
+      },
+      "reranked": {
+        "page_hit_at_12": true,
+        "reciprocal_rank": 0.3333333333333333,
+        "pages": [
+          376,
+          38,
+          39,
+          340,
+          379,
+          355,
+          26,
+          380,
+          340,
+          6,
+          85,
+          39
+        ],
+        "ids": [
+          "649b2e4ed8e5803966a363d2cc49db26",
+          "b5433323af9484556d3f5cceced8161c",
+          "16aecc5faba3097719ee3167d0770c32",
+          "850698a3f95bb0bee4db0127184d8f44",
+          "c40f69ea79325cf32d1898157db512d9",
+          "b32491f5f76845b1d93acaacae99c1ff",
+          "0027b41151929f8753d1c08575aee4f8",
+          "199f0920a069716f4fba5a26a1a98e54",
+          "0463b92fec2b3768043948220fc479a5",
+          "d93a3d74d515c139736eb25cb1ba5797",
+          "11bb7c1116476d71b1c32a5dff05dc41",
+          "e39dcd58279b851b92d4865162328ab1"
+        ]
+      }
+    }
+  ],
+  "summary": {
+    "lexical": {
+      "page_hit_rate_at_12": 1.0,
+      "mean_reciprocal_rank": 0.7222222222222222
+    },
+    "hybrid": {
+      "page_hit_rate_at_12": 1.0,
+      "mean_reciprocal_rank": 0.5238095238095238
+    },
+    "reranked": {
+      "page_hit_rate_at_12": 1.0,
+      "mean_reciprocal_rank": 0.8055555555555555
+    }
+  }
+}
