@@ -9,7 +9,8 @@ from finsight.store import Store
 
 REFERENCES=[
  ('ola-drhp-2023.pdf','Ola Electric Mobility Limited','2023-12-22','2023-12-26','https://www.sebi.gov.in/sebi_data/attachdocs/dec-2023/1703580725954.PDF'),
- ('swiggy-udrhp-2024.pdf','Swiggy Limited','2024-09-26','2024-09-27','https://www.sebi.gov.in/sebi_data/attachdocs/sep-2024/1727416339523.pdf')]
+ ('swiggy-udrhp-2024.pdf','Swiggy Limited','2024-09-26','2024-09-27','https://www.sebi.gov.in/sebi_data/attachdocs/sep-2024/1727416339523.pdf'),
+ ('hyundai-drhp-2024.pdf','Hyundai Motor India Limited','2024-06-14','2024-06-18','https://www.sebi.gov.in/sebi_data/attachdocs/jun-2024/1718692993829.PDF')]
 
 if __name__=='__main__':
     store=Store(ROOT/'data')
@@ -20,7 +21,7 @@ if __name__=='__main__':
         did=ingest_pdf(store,path.read_bytes(),company,name,'DRHP',dated)
         with store.connect() as c:
             manifest=json.loads(c.execute('SELECT payload FROM document_manifests WHERE document_id=?',(did,)).fetchone()[0])
-            manifest.update(source_url=url,source_listing_date=listed,acquired_on='2026-09-15',document_variant='Updated DRHP I' if 'swiggy' in name else 'DRHP')
+            manifest.update(source_url=url,source_listing_date=listed,acquired_on=manifest.get('acquired_on', '2026-09-17' if 'hyundai' in name else '2026-09-15'),document_variant='Updated DRHP I' if 'swiggy' in name else 'DRHP')
             c.execute('UPDATE document_manifests SET payload=? WHERE document_id=?',(json.dumps(manifest),did))
         results.append(dict(document_id=did,filename=name,sha256=store.document(did)['sha256'],pages=store.document(did)['page_count']))
     (ROOT/'data/reference/import-results.json').write_text(json.dumps(results,indent=2))

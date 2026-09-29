@@ -9,15 +9,8 @@ legacy-review/
 *.log
 tmp/
 venv/
-.env
-__pycache__/
-*.pyc
 *.pyo
-data/raw_pdfs/
-data/embeddings/
-data/colpali_index/
 .chroma/
 *.db
 .DS_Store
-*.log
 .cursor/

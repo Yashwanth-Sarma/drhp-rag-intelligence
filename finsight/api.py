@@ -1,4 +1,5 @@
 import json
+import hashlib
 import os
 from datetime import date
 from pathlib import Path
@@ -14,6 +15,7 @@ from .ingest import ingest_pdf, MAX_BYTES, IngestionBusy
 from .research import research, report
 from .finance import Observation, add_observation, compare
 from .contracts import Query, ReportRequest, Comparison, Identifier, DocumentKind
+from .structure import page_layout, layout_coverage
 
 ROOT=Path(__file__).resolve().parents[1]
 
@@ -92,8 +94,7 @@ def create_app(data_dir=None):
         e=store.evidence(eid)
         if not e or not e['bbox']: raise HTTPException(404,'Source image unavailable for legacy evidence.')
         import pymupdf
-        path=store.original_path(e['document_id'])
-        if not path.exists(): raise HTTPException(404,'Original PDF is missing; reimport the same document to restore it.')
+        path=verified_original(e['document_id'])
         with pymupdf.open(path) as pdf:
             page=pdf[e['page']-1]
             annotation=page.add_rect_annot(pymupdf.Rect(json.loads(e['bbox'])['rect']))
@@ -102,12 +103,22 @@ def create_app(data_dir=None):
             annotation.update()
             return Response(page.get_pixmap(matrix=pymupdf.Matrix(1.3,1.3)).tobytes('png'),media_type='image/png')
 
+    def verified_original(did):
+        document=store.document(did)
+        if not document: raise HTTPException(404,'Document not found.')
+        path=store.original_path(did)
+        try:
+            with path.open('rb') as source:
+                digest=hashlib.file_digest(source,'sha256').hexdigest()
+        except FileNotFoundError:
+            raise HTTPException(404,'Original PDF unavailable.')
+        if digest != document['sha256']:
+            raise HTTPException(409,'Original PDF hash mismatch. Restore the registered source before inspection.')
+        return path
+
     @app.get('/api/documents/{did}/pdf')
     def original(did: Identifier):
-        rows=store.rows('SELECT id FROM documents WHERE id=?',(did,))
-        if not rows: raise HTTPException(404,'Document not found.')
-        path=store.original_path(did)
-        if not path.exists(): raise HTTPException(404,'Original PDF unavailable.')
+        path=verified_original(did)
         return FileResponse(path,media_type='application/pdf',filename='source.pdf',content_disposition_type='inline')
 
     @app.get('/api/documents/{did}')
@@ -117,7 +128,17 @@ def create_app(data_dir=None):
         d['pages']=store.rows('SELECT * FROM document_pages WHERE document_id=? ORDER BY page',(did,))
         manifests=store.rows('SELECT payload FROM document_manifests WHERE document_id=?',(did,))
         d['manifest']=json.loads(manifests[0]['payload']) if manifests else None
+        d['layout_coverage']=layout_coverage(store, did)
         return d
+
+    @app.get('/api/documents/{did}/pages/{page}/layout')
+    def native_layout(did: Identifier, page: int):
+        try:
+            return page_layout(store, did, page)
+        except LookupError as exc:
+            raise HTTPException(404, str(exc))
+        except ValueError as exc:
+            raise HTTPException(422, str(exc))
 
     @app.get('/api/documents/{did}/pages/{page}')
     def page_evidence(did: Identifier,page: int):

@@ -1,6 +1,7 @@
 import pytest
 from finsight.evaluation import page_metrics, require_dense_ready, dataset_hash
 from finsight.evaluation import validate_span_label
+from finsight.evaluation import pack_context
 from test_retrieval import seed
 
 
@@ -8,6 +9,8 @@ def test_metrics_respect_rank_and_cutoff():
     results = [dict(id=str(i), company='Alpha', page=i) for i in range(1,14)]
     assert page_metrics(results, 'Alpha', [3])['reciprocal_rank'] == 1/3
     assert not page_metrics(results, 'Alpha', [13])['page_hit_at_12']
+    assert page_metrics(results, 'Alpha', [3], k=3)['page_hit_at_3']
+    assert not page_metrics(results, 'Alpha', [13], k=3)['page_hit_at_3']
 
 
 def test_evaluation_rejects_fallback_duplicates_and_issuer_leak():
@@ -27,3 +30,11 @@ def test_span_labels_are_bound_to_source_hash_scope_and_quote(store):
     assert validate_span_label(store,label)['id']==eid
     for field,value in [('document_sha256','b'*64),('company','Beta'),('page',2),('quote','operating profits')]:
         with pytest.raises(ValueError): validate_span_label(store,dict(label,**{field:value}))
+
+
+def test_context_budget_counts_characters_and_preserves_whole_blocks():
+    blocks = [dict(id='large', text='123456'), dict(id='a', text='(5)'),
+              dict(id='a', text='(5)'), dict(id='b', text=' 0')]
+    packed = pack_context(blocks, 5)
+    assert packed == dict(ids=['a', 'b'], omitted_ids=['large'], characters=5, max_chars=5)
+    assert pack_context(blocks, 0)['ids'] == []

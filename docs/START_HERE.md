@@ -1,21 +1,25 @@
 # Session entry point
 
-Updated 2026-09-16. Read this file and only the relevant stage file first.
+Updated 2026-09-18. Read this file and only the relevant stage file first.
 
-**Latest, 2026-09-17:** read [Stage 09](stages/09_SOURCE_CONTEXT.md). Source-context
-expansion and four exact-span development labels are implemented; 63 tests pass.
-GitHub checkpoint is on `codex/finsight-rag-okf-stages-01-08`, published through
-`tmp/github-publish`. Stage 09 contains the next-session prompt. Earlier states
-below are historical, not the current verification status.
+**Latest, 2026-09-18:** read [Stage 11](stages/11_LAYOUT_INSPECTION.md) and
+[Stage 10](stages/10_TOKEN_LAYOUT.md). Tokenizer windows, native layout context,
+filing layout inspection and source hash checks are implemented; 75 tests pass.
+The dense index is ready for three issuers. Eight development cases use fixed
+character caps; neighbour expansion does not show a benefit on this sample.
+Next: exact-cell labels and parser evaluation on at least 20 reviewed pages.
+Stage 10/11 changes are local. Last published checkpoint is `f467fbf` on
+`codex/finsight-rag-okf-stages-01-08`, through `tmp/github-publish`.
+Earlier states below are historical, not the current verification status.
 
-**Current verified status:** [Stage 08](stages/08_RETRIEVAL_VERIFICATION.md)
+**Historical verified status:** [Stage 08](stages/08_RETRIEVAL_VERIFICATION.md)
 supersedes the historical Stage 07 uncertainty below. The dense index is confirmed,
 58 tests pass, real-filing retrieval and API checks completed, and model hashes
 were recorded/checked. Keyword/hybrid/reranked page MRR on six smoke cases is
 0.7222/0.5238/0.8056, not financial accuracy. Next: span-level labels and
 token/heading-aware context. Historical status follows for traceability.
 
-**Latest implementation:** read [RAG_OKF_ARCHITECTURE.md](RAG_OKF_ARCHITECTURE.md) and
+**Historical implementation:** read [RAG_OKF_ARCHITECTURE.md](RAG_OKF_ARCHITECTURE.md) and
 [Stage 07 handoff](stages/07_RAG_OKF_HANDOFF.md). Hybrid retrieval, OKF context,
 grounding gates and an opt-in local Qwen adapter have been added. Both reference
 filings are imported (976 pages, 18,198 blocks). Free embedding and reranker
@@ -25,7 +29,7 @@ the dense index or real-filing evaluation is complete.
 
 **Current direction:** read [PRODUCT_DIRECTION_V2.md](PRODUCT_DIRECTION_V2.md) before a stage. User fixed Qwen3.6-35B-A3B and requested financial fine-tuning plus hybrid RAG and canonical Google OKF. The new PDF is provisional architecture, not binding implementation instructions. Single-company professional reports are the proposed V1; cross-company/portfolio scope is deferred.
 
-**Operational status:** the earlier import blockage was resolved during this session
+**Historical operational status:** the earlier import blockage was resolved during this session
 and both PDFs were successfully imported. Later, automatic approval review again
 reported no workspace credits and rejected an execution check. The last completed
 test run passed 51 tests. A subsequent OKF timestamp serialization fix, one added

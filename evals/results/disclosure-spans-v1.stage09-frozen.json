@@ -1,0 +1,279 @@
+{
+  "dataset": "disclosure-spans-v1",
+  "dataset_sha256": "8e591febf176b6fe6d06c3ab15a42a195660940038ba03492a48480478278090",
+  "annotation": "Agent-authored development labels checked against extracted source text; no financial expert review. Alternative supporting spans are not exhaustively labelled.",
+  "at": "2026-09-17T03:55:34.575082+00:00",
+  "cases": [
+    {
+      "id": "ola-loss-periods",
+      "question": "Which reporting periods does Ola identify as having operating cash outflows and losses?",
+      "expected_id": "717526241485c6f101a494c5e1f558bd",
+      "channels": {
+        "lexical": {
+          "rank": null,
+          "ids": [
+            "a5b15d52dc0432ef7bde0674c05d91f9",
+            "6fcd1894b3ebee7112fc8b9dffab6f6f",
+            "f0f3ae6510f6e2b996ddb44d70c05d9c",
+            "8e450a40a8f0cf5bc5ab4c43b8b35a7c",
+            "a43ac0a789e383e421f35539e31c7608",
+            "5f23e2c851c0f39f1614940ffeed41f0",
+            "78c2c4aa920435457f6ead0f8fdef7b2",
+            "cd306d4b573e7d5665adc97b3084f017",
+            "f027ea64db6e8c5a10dacf2bb1bb0231",
+            "d219d7157577b15f1bfcacb7c42d5cc3",
+            "229383decf7e09cb166a124cbc49da76",
+            "8d9bf9d08dad7393ee4f49d6230acc1d"
+          ],
+          "direct_hit": false,
+          "hit_with_neighbors": true
+        },
+        "hybrid": {
+          "rank": null,
+          "ids": [
+            "f027ea64db6e8c5a10dacf2bb1bb0231",
+            "06018b6885ab9af4d682a5abdfeb6ca3",
+            "dde9b4fdfaf37e69825b559e5bdcfcf5",
+            "69deae0848e1c0e43e28d93a185ee384",
+            "897faae05c02cb9fdc520ef672afe28c",
+            "47e7bc9d9373c730345f7a176c021bf2",
+            "d79adf92737d422eb0fb4eb40269a915",
+            "a585530c6a9334825d255a519242d87c",
+            "ce0c1d7c4a62d91ad4e4c3172a8c48d9",
+            "a5b15d52dc0432ef7bde0674c05d91f9",
+            "6fcd1894b3ebee7112fc8b9dffab6f6f",
+            "196dda34d199060fa7d1a8d9d88091e9"
+          ],
+          "direct_hit": false,
+          "hit_with_neighbors": true
+        },
+        "reranked": {
+          "rank": null,
+          "ids": [
+            "897faae05c02cb9fdc520ef672afe28c",
+            "95c4e01318909c6926a3e6f35bc9db9d",
+            "a2ca103fe72531df5d95c621534a9cef",
+            "ce0c1d7c4a62d91ad4e4c3172a8c48d9",
+            "6f83f338c23f56d29a8504806536dc98",
+            "c32b2763e2001f3af8a92cd69a00ed33",
+            "dde9b4fdfaf37e69825b559e5bdcfcf5",
+            "06018b6885ab9af4d682a5abdfeb6ca3",
+            "ae70a07f4bd012da69b6f1cc9833022d",
+            "6fcd1894b3ebee7112fc8b9dffab6f6f",
+            "a585530c6a9334825d255a519242d87c",
+            "b4c517a390d596365d0a1baea3a06a1a"
+          ],
+          "direct_hit": false,
+          "hit_with_neighbors": true
+        }
+      }
+    },
+    {
+      "id": "ola-expansion-risk",
+      "question": "Why might Ola's product expansion and international growth plans put pressure on profitability?",
+      "expected_id": "897faae05c02cb9fdc520ef672afe28c",
+      "channels": {
+        "lexical": {
+          "rank": 1,
+          "ids": [
+            "897faae05c02cb9fdc520ef672afe28c",
+            "804c4d0cc198afd26a001f37f295be6e",
+            "6690a8a223d820e3bd79d5b23a5ace91",
+            "0470c26d072f2ab7acd02f6943fe33a7",
+            "012278459d85bf703f5d1dab736a7792",
+            "409527011603a5214d8ca2241016cbed",
+            "1b13a51bb13b1cb35aa1268dc3ae0741",
+            "4c0955bca6351681e8581026173aaf07",
+            "cfe9e5b56b6b5f2440d6712ec0aaa690",
+            "33380a6d4f1c4e18d672f9410c8d6da4",
+            "bf3e78c602f1b20c8831655a0b072565",
+            "b8f63098cc7ec0762110a40ae32e3d05"
+          ],
+          "direct_hit": true,
+          "hit_with_neighbors": true
+        },
+        "hybrid": {
+          "rank": 1,
+          "ids": [
+            "897faae05c02cb9fdc520ef672afe28c",
+            "804c4d0cc198afd26a001f37f295be6e",
+            "fbfd34690e4940a852a5318f87b7d645",
+            "012278459d85bf703f5d1dab736a7792",
+            "1b13a51bb13b1cb35aa1268dc3ae0741",
+            "0d272c42fba6475034b64c01b01c392d",
+            "5172b8cb0de2c409798031b3a26297bb",
+            "6690a8a223d820e3bd79d5b23a5ace91",
+            "0470c26d072f2ab7acd02f6943fe33a7",
+            "6e3088e9929d108de1d58838d7fb2811",
+            "03d01b6462a390cdbfc4933c97f46b7e",
+            "03f145b9fe82d3884ba6c283a8bd6abd"
+          ],
+          "direct_hit": true,
+          "hit_with_neighbors": true
+        },
+        "reranked": {
+          "rank": 1,
+          "ids": [
+            "897faae05c02cb9fdc520ef672afe28c",
+            "fbfd34690e4940a852a5318f87b7d645",
+            "012278459d85bf703f5d1dab736a7792",
+            "5172b8cb0de2c409798031b3a26297bb",
+            "804c4d0cc198afd26a001f37f295be6e",
+            "6690a8a223d820e3bd79d5b23a5ace91",
+            "1b13a51bb13b1cb35aa1268dc3ae0741",
+            "0fa8c62e6045b888b55e83622610abc2",
+            "03f145b9fe82d3884ba6c283a8bd6abd",
+            "03d01b6462a390cdbfc4933c97f46b7e",
+            "409527011603a5214d8ca2241016cbed",
+            "6e3088e9929d108de1d58838d7fb2811"
+          ],
+          "direct_hit": true,
+          "hit_with_neighbors": true
+        }
+      }
+    },
+    {
+      "id": "swiggy-loss-history",
+      "question": "Has Swiggy disclosed a history of losses despite growing revenue?",
+      "expected_id": "16aecc5faba3097719ee3167d0770c32",
+      "channels": {
+        "lexical": {
+          "rank": null,
+          "ids": [
+            "3117837c6ff05ccabdb0ef264e9b5019",
+            "97284d42bef77c06467777b1e71ecff7",
+            "85b124472db74c116d9cdb80f91e146f",
+            "39c3453149673abda889397915e79f68",
+            "a7659efd39d8246d0ee3a5220a552b05",
+            "5608107eddf6a99ad77f83c1e6592715",
+            "9b7254550cf8d2c4491463b87685097d",
+            "fddcad846391404ed1c2f3a6c0d65f6d",
+            "96d07ecf86e3463220390c56b22dba6f",
+            "8d8c75bef607c2a293af5577652fd202",
+            "eb8ed75c84737e83e191b11c6384845e",
+            "e4e172903be9e46907de4b8ef1ff1502"
+          ],
+          "direct_hit": false,
+          "hit_with_neighbors": false
+        },
+        "hybrid": {
+          "rank": 2,
+          "ids": [
+            "3117837c6ff05ccabdb0ef264e9b5019",
+            "16aecc5faba3097719ee3167d0770c32",
+            "9b7254550cf8d2c4491463b87685097d",
+            "ea82eca00347bf38ebd2f3171d9f9f6d",
+            "97284d42bef77c06467777b1e71ecff7",
+            "03732bd4e338da495c6c027bdc45b784",
+            "85b124472db74c116d9cdb80f91e146f",
+            "05b7a6014cd71f0dbbc9e0f578faaf4a",
+            "39c3453149673abda889397915e79f68",
+            "216336ed841d23596deae8fbe90d470b",
+            "a7659efd39d8246d0ee3a5220a552b05",
+            "2afd13af96ff548ed210c69427b614d2"
+          ],
+          "direct_hit": true,
+          "hit_with_neighbors": true
+        },
+        "reranked": {
+          "rank": 1,
+          "ids": [
+            "16aecc5faba3097719ee3167d0770c32",
+            "ea82eca00347bf38ebd2f3171d9f9f6d",
+            "3117837c6ff05ccabdb0ef264e9b5019",
+            "03732bd4e338da495c6c027bdc45b784",
+            "05b7a6014cd71f0dbbc9e0f578faaf4a",
+            "216336ed841d23596deae8fbe90d470b",
+            "2afd13af96ff548ed210c69427b614d2",
+            "45d8ff06faaaf948bf910bd5776654b7",
+            "49fe19867b49a2e9c771e79f1e612cfa",
+            "616bbae8d2ae3677e49b85dec088bae1",
+            "688ef9126ece76bae12845cf4f826057",
+            "72fe86569d9710fabebc0dfb720f130b"
+          ],
+          "direct_hit": true,
+          "hit_with_neighbors": true
+        }
+      }
+    },
+    {
+      "id": "swiggy-growth-expenses",
+      "question": "Which categories of spending does Swiggy say it incurred to support growth?",
+      "expected_id": "16aecc5faba3097719ee3167d0770c32",
+      "channels": {
+        "lexical": {
+          "rank": 4,
+          "ids": [
+            "52074bf24bfa58c48f25a5b02f99b1e9",
+            "221cac341cdc7a03bfbd5e4a6fcb67f2",
+            "bebce1b633ae2b8c80ef1b869009cbb4",
+            "16aecc5faba3097719ee3167d0770c32",
+            "c274ac855350b43355a463c1d34ecaf9",
+            "4377c8ef6f37167b22dbcab3f84faaf0",
+            "6edb04ce77eeb3cf1a1b9e950542c61d",
+            "46da1e95199df94d0bdb8aa3c4c96e49",
+            "099c9ad0faf9b4b959dbf0f5e1a49ee3",
+            "e0a6fd3d4ef26940fc4a9c08c5d6cf5b",
+            "cb9a875e0c4fc7757d6f4dafefb829cd",
+            "b988a5445530be73f69f7a62e9c5e253"
+          ],
+          "direct_hit": true,
+          "hit_with_neighbors": true
+        },
+        "hybrid": {
+          "rank": 1,
+          "ids": [
+            "16aecc5faba3097719ee3167d0770c32",
+            "3117837c6ff05ccabdb0ef264e9b5019",
+            "52074bf24bfa58c48f25a5b02f99b1e9",
+            "03732bd4e338da495c6c027bdc45b784",
+            "221cac341cdc7a03bfbd5e4a6fcb67f2",
+            "05b7a6014cd71f0dbbc9e0f578faaf4a",
+            "bebce1b633ae2b8c80ef1b869009cbb4",
+            "216336ed841d23596deae8fbe90d470b",
+            "2afd13af96ff548ed210c69427b614d2",
+            "c274ac855350b43355a463c1d34ecaf9",
+            "4377c8ef6f37167b22dbcab3f84faaf0",
+            "45d8ff06faaaf948bf910bd5776654b7"
+          ],
+          "direct_hit": true,
+          "hit_with_neighbors": true
+        },
+        "reranked": {
+          "rank": 1,
+          "ids": [
+            "16aecc5faba3097719ee3167d0770c32",
+            "a4b6934876b8094c145b90bcfb33be87",
+            "221cac341cdc7a03bfbd5e4a6fcb67f2",
+            "545ffaf176606fee83c8977433a49e3b",
+            "3117837c6ff05ccabdb0ef264e9b5019",
+            "03732bd4e338da495c6c027bdc45b784",
+            "05b7a6014cd71f0dbbc9e0f578faaf4a",
+            "216336ed841d23596deae8fbe90d470b",
+            "2afd13af96ff548ed210c69427b614d2",
+            "45d8ff06faaaf948bf910bd5776654b7",
+            "49fe19867b49a2e9c771e79f1e612cfa",
+            "616bbae8d2ae3677e49b85dec088bae1"
+          ],
+          "direct_hit": true,
+          "hit_with_neighbors": true
+        }
+      }
+    }
+  ],
+  "summary": {
+    "lexical": {
+      "direct_hit": 0.5,
+      "hit_with_neighbors": 0.75
+    },
+    "hybrid": {
+      "direct_hit": 0.75,
+      "hit_with_neighbors": 1.0
+    },
+    "reranked": {
+      "direct_hit": 0.75,
+      "hit_with_neighbors": 1.0
+    }
+  },
+  "limitation": "Four development cases across three source blocks. Context-expanded hits use a larger evidence budget. Neither hit metric proves answer faithfulness."
+}

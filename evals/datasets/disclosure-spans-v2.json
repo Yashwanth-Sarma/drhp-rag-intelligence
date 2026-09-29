@@ -1,0 +1,86 @@
+{
+  "name": "disclosure-spans-v2",
+  "annotation": "Agent-authored development labels checked against extracted source text; no financial expert review. Alternative supporting spans are not exhaustively labelled.",
+  "cases": [
+    {
+      "id": "ola-loss-periods",
+      "company": "Ola Electric Mobility Limited",
+      "document_id": "a5b8cce713093f98ee7819e0a9fe26db",
+      "document_sha256": "61b8733a123fa1274d4854a34b65ceabab6ab4c2dd3106a20e677bdc80fa6c94",
+      "question": "Which reporting periods does Ola identify as having operating cash outflows and losses?",
+      "evidence_id": "717526241485c6f101a494c5e1f558bd",
+      "page": 32,
+      "quote": "activities in the three-months period ended June 30, 2023 and Fiscals 2023, 2022 and 2021 as shown below:"
+    },
+    {
+      "id": "ola-expansion-risk",
+      "company": "Ola Electric Mobility Limited",
+      "document_id": "a5b8cce713093f98ee7819e0a9fe26db",
+      "document_sha256": "61b8733a123fa1274d4854a34b65ceabab6ab4c2dd3106a20e677bdc80fa6c94",
+      "question": "Why might Ola's product expansion and international growth plans put pressure on profitability?",
+      "evidence_id": "897faae05c02cb9fdc520ef672afe28c",
+      "page": 32,
+      "quote": "our sales footprint across international automotive markets, could result in an increase in our operating costs."
+    },
+    {
+      "id": "swiggy-loss-history",
+      "company": "Swiggy Limited",
+      "document_id": "f8d05e110527a3b14987ae5a7fd2a11e",
+      "document_sha256": "d31935a90d8588e4db26beda025af23b5413ac1162ecc223f13539b247172807",
+      "question": "Has Swiggy disclosed a history of losses despite growing revenue?",
+      "evidence_id": "16aecc5faba3097719ee3167d0770c32",
+      "page": 39,
+      "quote": "losses in each year since our incorporation and had negative cash flows from operating activities."
+    },
+    {
+      "id": "swiggy-growth-expenses",
+      "company": "Swiggy Limited",
+      "document_id": "f8d05e110527a3b14987ae5a7fd2a11e",
+      "document_sha256": "d31935a90d8588e4db26beda025af23b5413ac1162ecc223f13539b247172807",
+      "question": "Which categories of spending does Swiggy say it incurred to support growth?",
+      "evidence_id": "16aecc5faba3097719ee3167d0770c32",
+      "page": 39,
+      "quote": "expenses to increase our user base and enhance our brand; delivery and related costs to support our delivery facilitation"
+    },
+    {
+      "id": "hyundai-semiconductor-sourcing",
+      "company": "Hyundai Motor India Limited",
+      "document_id": "e1886aea64996c056c36a85c38ceb662",
+      "document_sha256": "5b2b9bda4d9a4cb849a672be432253888dc0254633b8500b497ebc4487102a21",
+      "question": "How did Hyundai respond to semiconductor shortages, and what risk remains?",
+      "evidence_id": "c8b6f6d49a85bf66699f9aec134d2ed2",
+      "page": 35,
+      "quote": "chips from alternate suppliers on a short-term basis by paying a higher price"
+    },
+    {
+      "id": "hyundai-royalty-termination",
+      "company": "Hyundai Motor India Limited",
+      "document_id": "e1886aea64996c056c36a85c38ceb662",
+      "document_sha256": "5b2b9bda4d9a4cb849a672be432253888dc0254633b8500b497ebc4487102a21",
+      "question": "What royalty does Hyundai pay its parent, and how could termination affect production?",
+      "evidence_id": "bdd53c6b3aa1fcdc02a59886405a9a9f",
+      "page": 36,
+      "quote": "equal to 3.5% of our sales revenue"
+    },
+    {
+      "id": "ola-supplier-scale-risk",
+      "company": "Ola Electric Mobility Limited",
+      "document_id": "a5b8cce713093f98ee7819e0a9fe26db",
+      "document_sha256": "61b8733a123fa1274d4854a34b65ceabab6ab4c2dd3106a20e677bdc80fa6c94",
+      "question": "What risk does Ola disclose about suppliers keeping pace as operations scale?",
+      "evidence_id": "27727e45d3ba750792af26e7d7140b7a",
+      "page": 33,
+      "quote": "There can be no assurance that our existing suppliers will be able to provide adequate materials and EV components"
+    },
+    {
+      "id": "swiggy-licenses-fssai",
+      "company": "Swiggy Limited",
+      "document_id": "f8d05e110527a3b14987ae5a7fd2a11e",
+      "document_sha256": "d31935a90d8588e4db26beda025af23b5413ac1162ecc223f13539b247172807",
+      "question": "Which food-safety approvals does Swiggy say it must obtain and maintain?",
+      "evidence_id": "5c1e352639ef075368e7f99da1b2fb9d",
+      "page": 59,
+      "quote": "licences issued by the Food Safety and Standards Authority of India"
+    }
+  ]
+}

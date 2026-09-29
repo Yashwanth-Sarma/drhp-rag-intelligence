@@ -1,0 +1,9 @@
+{
+  "desktop": true,
+  "mobile": true,
+  "nativeTables": 1,
+  "sourceInspection": true,
+  "pageOverflow": false,
+  "errors": [],
+  "denseStatus": "ready"
+}

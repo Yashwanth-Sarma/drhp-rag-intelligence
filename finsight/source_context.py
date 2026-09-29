@@ -1,6 +1,7 @@
 """Bounded neighbouring source blocks, never inferred table/header relationships."""
 import json
 import math
+from .structure import structure_context
 
 
 def _position(block):
@@ -24,7 +25,8 @@ def source_context(store, evidence_id, radius=2, max_chars=12000):
                   neighbors=[], omitted_ids=[], relation='same_page_spatial_neighbors',
                   limitation='Spatial neighbours are not verified headings, table headers or supporting evidence for the anchor. Each block requires its own citation.')
     if anchor['status']=='legacy_unverified' or _position(anchor) is None:
-        return dict(result, status='geometry_unavailable')
+        return dict(result, status='geometry_unavailable',
+                    structure_context=dict(status='geometry_unavailable', items=[]))
     rows = store.rows('SELECT id,bbox FROM evidence WHERE document_id=? AND page=?',
                       (anchor['document_id'], anchor['page']))
     positioned = [(position, row['id']) for row in rows if (position := _position(row)) is not None]
@@ -44,4 +46,8 @@ def source_context(store, evidence_id, radius=2, max_chars=12000):
     result['neighbors'] = [block for _,block in sorted(selected)]
     result['status'] = 'partial' if result['omitted_ids'] else 'available'
     result['characters'] = used
+    result['structure_context'] = structure_context(store, anchor, max_chars-used)
+    result['characters'] += result['structure_context']['characters']
+    if result['structure_context']['omitted_ids']:
+        result['status'] = 'partial'
     return result

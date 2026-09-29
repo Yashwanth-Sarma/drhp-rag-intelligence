@@ -42,6 +42,10 @@ PDF upload, hash-based duplicate handling, isolated parser timeout, all-page cov
 Table-cell reconstruction, OCR, live-tested Qwen synthesis, professional report/verified chart generation, authenticated external deployment and production validation. Printed page labels are not inferred from arbitrary numeric lines. Date filtering uses the supplied document date, not verified historical public availability. Do not publish this local development server externally.
 
 Start a new session with [START_HERE.md](docs/START_HERE.md). Source-based design observations are in [filing study](docs/SEBI_FILING_STUDY.md).
+
+The latest multi-role architecture, retrieval, and safety review is in
+[the FinSight council review](docs/COUNCIL_REVIEW_2026-09-29.md). Its benchmark
+numbers are development evidence-location rates, not financial answer accuracy.
 # September 16 retrieval update
 
 Local hybrid retrieval, OKF methodology context, citation integrity checks and a

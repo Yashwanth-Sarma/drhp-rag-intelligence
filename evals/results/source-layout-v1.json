@@ -1,0 +1,462 @@
+{
+  "pages": [
+    {
+      "document_id": "a5b8cce713093f98ee7819e0a9fe26db",
+      "document_sha256": "61b8733a123fa1274d4854a34b65ceabab6ab4c2dd3106a20e677bdc80fa6c94",
+      "page": 32,
+      "parser_version": "1.28.2",
+      "version": "native-layout-v1",
+      "native_lines": 72,
+      "heading_candidates": 3,
+      "tables": [
+        {
+          "id": "4a6247fd225e385459d0407db630f8df",
+          "bbox": [
+            89.49257169451032,
+            626.514986038208,
+            559.080810546875,
+            679.6299743652344
+          ],
+          "rows": 5,
+          "columns": 9,
+          "evidence_ids": [
+            "85e583f1cec1002ef99324a11ed2fca3",
+            "462172ef1eec861d18c77c346630fc48",
+            "405e4b921a0f45a3906372aca0fcec15",
+            "25c70ae1fa9a89771acea1e64e851142",
+            "905460bf8497bab68b8b8e17b1512dc9"
+          ],
+          "cells_sha256": "7fe077dad92d15979de1f5e647d56e04c05fa861191e4bb788b048774c151c14"
+        }
+      ]
+    },
+    {
+      "document_id": "a5b8cce713093f98ee7819e0a9fe26db",
+      "document_sha256": "61b8733a123fa1274d4854a34b65ceabab6ab4c2dd3106a20e677bdc80fa6c94",
+      "page": 33,
+      "parser_version": "1.28.2",
+      "version": "native-layout-v1",
+      "native_lines": 73,
+      "heading_candidates": 3,
+      "tables": [
+        {
+          "id": "00e70082b42f8ef2760ec58ce01b2f9f",
+          "bbox": [
+            89.49257169451032,
+            506.47920579176684,
+            559.0800048828125,
+            561.3956909179688
+          ],
+          "rows": 5,
+          "columns": 8,
+          "evidence_ids": [
+            "42047c4e14d250ed1281939e9ed036a1",
+            "c1f49d32c297c782db264d399751db02",
+            "6a55f1bd1794d59db8a3fd3d8d4e5dec",
+            "11ba4040df80eb92d1537f9dad33fe78",
+            "bbac76e14e57c9d9406b357022b8395c",
+            "4765eca5913949d9b7d29c95a8e736d7",
+            "e7c9983f8fdfb758e4561d721a71fdf3"
+          ],
+          "cells_sha256": "6a71143939491faf82d481c362dde886c1a7f4015e78ba5f5e716659c51d08b4"
+        }
+      ]
+    },
+    {
+      "document_id": "a5b8cce713093f98ee7819e0a9fe26db",
+      "document_sha256": "61b8733a123fa1274d4854a34b65ceabab6ab4c2dd3106a20e677bdc80fa6c94",
+      "page": 70,
+      "parser_version": "1.28.2",
+      "version": "native-layout-v1",
+      "native_lines": 16,
+      "heading_candidates": 1,
+      "tables": []
+    },
+    {
+      "document_id": "a5b8cce713093f98ee7819e0a9fe26db",
+      "document_sha256": "61b8733a123fa1274d4854a34b65ceabab6ab4c2dd3106a20e677bdc80fa6c94",
+      "page": 71,
+      "parser_version": "1.28.2",
+      "version": "native-layout-v1",
+      "native_lines": 318,
+      "heading_candidates": 1,
+      "tables": [
+        {
+          "id": "84cd5a3da06835c4476f3b194fe469ec",
+          "bbox": [
+            54.285714043511284,
+            95.91496276855469,
+            559.1101980209351,
+            793.7199910481771
+          ],
+          "rows": 62,
+          "columns": 5,
+          "evidence_ids": [
+            "c520d241d96cc67635417873d88fc979",
+            "0cda481283df3db7580c05698625f6dc",
+            "c3cbeec424a8fdc2fe62572805008d99",
+            "0156b2f32f33a03b8d5aeab6c0848805",
+            "a836b6aefd9a6057d15955a66a991a78",
+            "09b2c49c3200ea4bf9db2bb3d79326c6",
+            "6cb06e8f6dc837cf8ee55fe3e3c9b776",
+            "3a2934234cb5fdca3e48708679ccc21d",
+            "e5cfa13bab855f0d45849edd3dde7fae",
+            "ad21e922036740259b8f0b3d15b85809",
+            "4fc15826b0b6ff960168b62ec0fde38a",
+            "dc150ebf3ad288ae7be3b76b0e880deb",
+            "93910b71d8ebd66a801c0c2e329d48c6",
+            "9e7fe569b19a5f17c3fe51be6d05b97b"
+          ],
+          "cells_sha256": "24815454649432db2b5a4f8826d164d966b49644520d14662e565a6c129d8b52"
+        }
+      ]
+    },
+    {
+      "document_id": "a5b8cce713093f98ee7819e0a9fe26db",
+      "document_sha256": "61b8733a123fa1274d4854a34b65ceabab6ab4c2dd3106a20e677bdc80fa6c94",
+      "page": 72,
+      "parser_version": "1.28.2",
+      "version": "native-layout-v1",
+      "native_lines": 300,
+      "heading_candidates": 1,
+      "tables": [
+        {
+          "id": "67fcaf91c2fe7996de430d0162defc02",
+          "bbox": [
+            54.05333155172843,
+            63.97372055053711,
+            558.7493433459051,
+            751.8159993489584
+          ],
+          "rows": 54,
+          "columns": 5,
+          "evidence_ids": [
+            "844cded4bc17911b543f3922feef9dcc",
+            "bed6a9510e6eb8adcf78baf943028acb",
+            "a050e44457d2403d7095f32b98b02067",
+            "ca5b69b98c619368861af01e3391b9a3",
+            "6f3cb22deacb4940ac5779c982aff2c7",
+            "b2297ca7d55a3b2e34986280aaef35d6",
+            "feefd191eb5a07fd2a6ab570a7efadc4",
+            "4935932e1e065c66230251619439267c",
+            "04ca5834c595a88776cb1592881cb57e",
+            "0ca47e636879c9da2677af5119375446",
+            "018b57d39084c89405df1c9142961e25",
+            "795de1526e3f01c4369e62272a682ded",
+            "d5684eb396097ae70c407b0fbc2ae693",
+            "ae580404b1217e5b687edc73989037ec",
+            "6d141b5f5ce8b391c5f08a31bab88d3c",
+            "67d03822ca0e1ab9e264ff160fb6863e",
+            "8eb48590f0fca860be82c80acae0dab5",
+            "f7ecffd4bdc9626c8806063e1e123246",
+            "a9ac4c33b9bdd8ae0526fe80846ca964",
+            "20c2b0a095a0ee897ccc0c1ed54809cb",
+            "205934f7e276b886a2c0a6e4ce65cce4",
+            "ca2f363bd2e98030d193c05daae20e4b",
+            "1c9e4be3ee0bfd546d31b7cdd370cf2d",
+            "9da9037f08ca92cd58db55f3358bad0e",
+            "d606a15e1994e270fe1453562a08586d",
+            "fdbd1b2a0f0873b8178631cf29e8bf37",
+            "22f4d00a319b8f05b0eebb43a3c0b680",
+            "44a978f1fec0931ca7c97f4c10c277fa",
+            "16a8d023d7af66736ea92b98dcbab20c",
+            "447dfaedc5e144b15c7a28d9b522aad5",
+            "4b1b03b8fee7208f24abd2a1310ba8ff",
+            "e95e0db9e7d7b010c8b1508c0a258901",
+            "71c8a21f880fce6e126b3c6bb2593633"
+          ],
+          "cells_sha256": "657d12520dc4ce7154e8555a1f56357e4317520fe72509920917d452c44c6c26"
+        }
+      ]
+    },
+    {
+      "document_id": "f8d05e110527a3b14987ae5a7fd2a11e",
+      "document_sha256": "d31935a90d8588e4db26beda025af23b5413ac1162ecc223f13539b247172807",
+      "page": 39,
+      "parser_version": "1.28.2",
+      "version": "native-layout-v1",
+      "native_lines": 103,
+      "heading_candidates": 6,
+      "tables": [
+        {
+          "id": "e4c332683b6d94c72b8f070e62425908",
+          "bbox": [
+            68.06399917602539,
+            662.97998046875,
+            559.1803436279297,
+            781.3542916434152
+          ],
+          "rows": 10,
+          "columns": 16,
+          "evidence_ids": [
+            "cbdd323dafd33df48f948487f7177506",
+            "a96b3cfe36fcd6cc3bfb04760c147a8e",
+            "a0ee0f529748dd1e94e7bb9daa728c17",
+            "e472b4bcc4fc9642dbb2711e6e2e17fb",
+            "51941f1139dec8d93838776c1168eb8b",
+            "9447c6f61778f4f1329d0c094b45342c",
+            "ea82eca00347bf38ebd2f3171d9f9f6d"
+          ],
+          "cells_sha256": "fc9c5a0bc3abf1392de76b2af5ead310582f351feb1c6dbec9ad36086db7d375"
+        }
+      ]
+    },
+    {
+      "document_id": "f8d05e110527a3b14987ae5a7fd2a11e",
+      "document_sha256": "d31935a90d8588e4db26beda025af23b5413ac1162ecc223f13539b247172807",
+      "page": 59,
+      "parser_version": "1.28.2",
+      "version": "native-layout-v1",
+      "native_lines": 63,
+      "heading_candidates": 7,
+      "tables": []
+    },
+    {
+      "document_id": "f8d05e110527a3b14987ae5a7fd2a11e",
+      "document_sha256": "d31935a90d8588e4db26beda025af23b5413ac1162ecc223f13539b247172807",
+      "page": 80,
+      "parser_version": "1.28.2",
+      "version": "native-layout-v1",
+      "native_lines": 14,
+      "heading_candidates": 1,
+      "tables": []
+    },
+    {
+      "document_id": "f8d05e110527a3b14987ae5a7fd2a11e",
+      "document_sha256": "d31935a90d8588e4db26beda025af23b5413ac1162ecc223f13539b247172807",
+      "page": 81,
+      "parser_version": "1.28.2",
+      "version": "native-layout-v1",
+      "native_lines": 216,
+      "heading_candidates": 1,
+      "tables": [
+        {
+          "id": "ac63b16d5fc74b4ad1637e1ac3a6fb56",
+          "bbox": [
+            36.239999771118164,
+            115.78666856553819,
+            805.7263465294471,
+            535.8240269252232
+          ],
+          "rows": 36,
+          "columns": 6,
+          "evidence_ids": [
+            "568064b019c2cf0fa93cb9a4976c0457",
+            "fc45cdd2411a1342d90c3a7121f810a0"
+          ],
+          "cells_sha256": "0a10efce5ca28f7a9cf69759c32db3c4acedae0b4e55083c244f506f5cb8623c"
+        }
+      ]
+    },
+    {
+      "document_id": "f8d05e110527a3b14987ae5a7fd2a11e",
+      "document_sha256": "d31935a90d8588e4db26beda025af23b5413ac1162ecc223f13539b247172807",
+      "page": 82,
+      "parser_version": "1.28.2",
+      "version": "native-layout-v1",
+      "native_lines": 163,
+      "heading_candidates": 0,
+      "tables": [
+        {
+          "id": "1ee1c520e52920751e0200d6aec6773b",
+          "bbox": [
+            36.239999771118164,
+            54.25086127387153,
+            805.7042541503906,
+            369.2242867606027
+          ],
+          "rows": 27,
+          "columns": 6,
+          "evidence_ids": [
+            "40488bdd1e24a923282c3c05d82a336c"
+          ],
+          "cells_sha256": "b3422a677ee42da19c8cf9ca5c5d2fd58b7ec9b382484a49c1c68458c89b61c4"
+        }
+      ]
+    },
+    {
+      "document_id": "e1886aea64996c056c36a85c38ceb662",
+      "document_sha256": "5b2b9bda4d9a4cb849a672be432253888dc0254633b8500b497ebc4487102a21",
+      "page": 33,
+      "parser_version": "1.28.2",
+      "version": "native-layout-v1",
+      "native_lines": 77,
+      "heading_candidates": 4,
+      "tables": [
+        {
+          "id": "8d7c593e23c8d74d0f2e35366e3f486e",
+          "bbox": [
+            71.64000193277995,
+            677.3499870300293,
+            524.4600219726562,
+            763.7599894205729
+          ],
+          "rows": 8,
+          "columns": 15,
+          "evidence_ids": [
+            "4ead05037f21ad16c055d634572759f1",
+            "dd3ff64541e60243f2c3934f5914ce6c",
+            "66914291004f2a72688d77c488b2a37d",
+            "201df62bbfb068a953d939ce9afc98df",
+            "e786b5b5abd52d9435e82b5fdfd0ff9b",
+            "063739b18d31fd23db4f6a53f041bb96"
+          ],
+          "cells_sha256": "0aa6248bd6f33974d0c1aa72e68215378072927c7c0a4f21912ecce7cfcc30d5"
+        }
+      ]
+    },
+    {
+      "document_id": "e1886aea64996c056c36a85c38ceb662",
+      "document_sha256": "5b2b9bda4d9a4cb849a672be432253888dc0254633b8500b497ebc4487102a21",
+      "page": 34,
+      "parser_version": "1.28.2",
+      "version": "native-layout-v1",
+      "native_lines": 105,
+      "heading_candidates": 1,
+      "tables": [
+        {
+          "id": "a4719ddcb9c8d9a71b8bd98236cb1ddb",
+          "bbox": [
+            71.67000198364258,
+            72.32998657226562,
+            523.5300140380859,
+            137.07999674479166
+          ],
+          "rows": 6,
+          "columns": 14,
+          "evidence_ids": [
+            "492d98b4353db8f33ce221de0f385d85",
+            "19f133f704b913e972099171b7980d83",
+            "7d77462223bc4a18a999b49cabb5dffc",
+            "617aa59f08ecb5922134938400a28a9c",
+            "76584d5a673c55664894fded4521ab75",
+            "be76551e4c2eb9bb54e1c1d3d1b899ba"
+          ],
+          "cells_sha256": "b6869922d25b71c51e1bc372f3edaaee55a31b870dc862479d8698623d3f6559"
+        },
+        {
+          "id": "da9881d3f32ec4f30b1920fa268a824d",
+          "bbox": [
+            71.67000198364258,
+            527.739990234375,
+            523.5300140380859,
+            580.8279724121094
+          ],
+          "rows": 5,
+          "columns": 14,
+          "evidence_ids": [
+            "c294c46e07e02ffee44dab4c20346168",
+            "3da60c9f1ffcb5eeac42ac1e7376f9f8",
+            "890282751280a15169ae0b7ee52d3d2e",
+            "75e84e9c1e8c6edf9f859141bb99ce4b"
+          ],
+          "cells_sha256": "d7737a457e6e6a650863db65512415d602c856b1f3557775d6a2014ab87c0325"
+        }
+      ]
+    },
+    {
+      "document_id": "e1886aea64996c056c36a85c38ceb662",
+      "document_sha256": "5b2b9bda4d9a4cb849a672be432253888dc0254633b8500b497ebc4487102a21",
+      "page": 35,
+      "parser_version": "1.28.2",
+      "version": "native-layout-v1",
+      "native_lines": 61,
+      "heading_candidates": 4,
+      "tables": []
+    },
+    {
+      "document_id": "e1886aea64996c056c36a85c38ceb662",
+      "document_sha256": "5b2b9bda4d9a4cb849a672be432253888dc0254633b8500b497ebc4487102a21",
+      "page": 36,
+      "parser_version": "1.28.2",
+      "version": "native-layout-v1",
+      "native_lines": 114,
+      "heading_candidates": 3,
+      "tables": [
+        {
+          "id": "71aacf8d4bc0b184650ff54a7f2124e5",
+          "bbox": [
+            72.0,
+            554.2821522588315,
+            523.3800048828125,
+            638.7519775390625
+          ],
+          "rows": 8,
+          "columns": 11,
+          "evidence_ids": [
+            "b638fc6652937a8ba7be126c238e7bac",
+            "2b59520b72ef0e801acdb30d788fcb16",
+            "e717754aaeee029be957c5e59672ee7a",
+            "c381cfaaabd480523a234180fdb0b0b3",
+            "8acb03eb1c62a27d0412eaa68c79c0d4",
+            "9ad6c51e08cc1254fd046e1de6da39b3",
+            "952f1a3fb47933ec6bb6f4eb19c0e915",
+            "5d2a3fbfe276b6d59e228ed4fee1e639",
+            "3500c731bf5fcfb69472e0896f8661ae",
+            "0a6429afd91863496f9322e1c4f2a733",
+            "c7bd7d18d097f807fe8dffb3ff7cd139",
+            "cd7305759d2bd153530c3ad213dd1b7d",
+            "d4242f5dedb076376116890be24bfe68",
+            "72e8c2f5c72dc92a124128fdd7cf5dc8",
+            "8cd57cb9e07b3240a58c1fb7f39df0e8"
+          ],
+          "cells_sha256": "dcfd00510fec447e0aef5426c060fc970188548d135c25b91ea05ed9b95f004d"
+        },
+        {
+          "id": "0836325b92d8f7714aa1f24b0b2d1813",
+          "bbox": [
+            72.0,
+            661.7706146240234,
+            523.3800048828125,
+            672.7133076985677
+          ],
+          "rows": 1,
+          "columns": 3,
+          "evidence_ids": [
+            "8cd57cb9e07b3240a58c1fb7f39df0e8"
+          ],
+          "cells_sha256": "70062462edd53607c369c374950d4d33de6720a2f30fa1fdb87ac1104570ece6"
+        },
+        {
+          "id": "4256ab73cb0b8e80b37e4146929fba05",
+          "bbox": [
+            72.0,
+            695.810619354248,
+            523.3800048828125,
+            706.7533230251736
+          ],
+          "rows": 1,
+          "columns": 3,
+          "evidence_ids": [
+            "8cd57cb9e07b3240a58c1fb7f39df0e8"
+          ],
+          "cells_sha256": "98ae4ac7fc1b50459d70d2ed6d0a3c3506508d1d688274911267a479b45a78e3"
+        },
+        {
+          "id": "4846dbd16e2c79265beb2de97bab71ca",
+          "bbox": [
+            72.0,
+            729.8831024169922,
+            523.3800048828125,
+            740.6399637858073
+          ],
+          "rows": 1,
+          "columns": 3,
+          "evidence_ids": [
+            "8cd57cb9e07b3240a58c1fb7f39df0e8"
+          ],
+          "cells_sha256": "d7d3da2aa0f593ac1bed9fb461884fc38088cbe431f4c6a88ff9e429d5805546"
+        }
+      ]
+    }
+  ],
+  "visual_review": {
+    "scope": "Agent inspection of rendered Ola p32, Swiggy p81, Hyundai p36 only; not expert annotation.",
+    "observations": [
+      "Ola p32 has a risk heading, a loss/cash-flow table and a period header. Native lines preserve these; financial meaning is unvalidated.",
+      "Swiggy p81 has annual/interim columns, currency scale, parentheses and continuation to p82. Cross-page relationships remain unlinked.",
+      "Hyundai p36 has one visually continuous litigation table. Ruled-line detection returns four fragments and splits header text into rows. Retain this failure; do not reconstruct financial observations from these candidates."
+    ]
+  },
+  "limitation": "Fourteen selected pages, one native parser, three visually inspected pages. No full-corpus structure coverage, parser comparison, or complete Stage 02 acceptance."
+}

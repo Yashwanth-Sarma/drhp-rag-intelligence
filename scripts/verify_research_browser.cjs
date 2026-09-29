@@ -1,0 +1,33 @@
+const { chromium } = require('playwright');
+const fs = require('fs');
+(async () => {
+  fs.mkdirSync('tmp',{recursive:true});
+  const browser = await chromium.launch({headless:true});
+  const page = await browser.newPage({viewport:{width:1400,height:900}});
+  const errors=[];
+  page.on('pageerror',e=>errors.push(e.message));
+  await page.goto('http://127.0.0.1:8765');
+  await page.locator('#company option[value="Ola Electric Mobility Limited"]').waitFor({state:'attached'});
+  await page.locator('#company').selectOption('Ola Electric Mobility Limited');
+  await page.locator('#question').fill('Net cash used in operating activities 2,671.56 14,720.79');
+  const response = page.waitForResponse(r=>r.url().endsWith('/api/research'),{timeout:60000});
+  await page.locator('#search-form button[type=submit]').click();
+  const data = await (await response).json();
+  const native = page.locator('details').filter({has:page.locator('.native-table')}).first();
+  await native.locator('summary').click();
+  await native.scrollIntoViewIfNeeded();
+  await page.screenshot({path:'tmp/stage10-desktop.png'});
+  await page.setViewportSize({width:390,height:844});
+  await native.scrollIntoViewIfNeeded();
+  await page.screenshot({path:'tmp/stage10-mobile.png'});
+  const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth);
+  await native.getByRole('button',{name:/Inspect/}).first().click();
+  await page.locator('#source-dialog[open]').waitFor();
+  await page.locator('.source-image').evaluate(image=>image.decode());
+  const summary={desktop:true,mobile:true,nativeTables:await native.locator('table').count(),
+    sourceInspection:true,pageOverflow:overflow,errors,denseStatus:data.retrieval.dense_status};
+  fs.writeFileSync('evals/results/browser-stage10.json',JSON.stringify(summary,null,2));
+  console.log(JSON.stringify(summary));
+  await browser.close();
+  if(overflow||errors.length) process.exitCode=1;
+})().catch(e=>{console.error(e);process.exit(1)});

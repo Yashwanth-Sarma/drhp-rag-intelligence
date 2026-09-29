@@ -7,7 +7,7 @@ from functools import lru_cache
 import numpy as np
 
 MODEL = 'BAAI/bge-small-en-v1.5'
-VERSION = 'block-window-180-30-v1'
+VERSION = 'block-token-window-180-30-v3'
 SCHEMA = '''CREATE TABLE IF NOT EXISTS dense_vectors (
  evidence_id TEXT NOT NULL REFERENCES evidence(id), window INTEGER NOT NULL,
  text_hash TEXT NOT NULL, vector BLOB NOT NULL, PRIMARY KEY(evidence_id,window));
@@ -22,13 +22,44 @@ def embedding(cache, download=False):
                          providers=['CPUExecutionProvider'], local_files_only=not download)
 
 
-def windows(text):
-    """Keep original spans; overlap is for retrieval only, never new evidence."""
-    words = list(re.finditer(r'\S+', text))
-    for start in range(0, len(words), 150):
-        end = min(start + 180, len(words))
-        yield text[words[start].start():words[end-1].end()]
-        if end == len(words):
+def window_tokenizer(model):
+    """Clone the actual embedding tokenizer without truncating long source blocks."""
+    from tokenizers import Tokenizer
+    backend = getattr(model, 'model', model)
+    original = getattr(backend, 'tokenizer', None)
+    if original is None:
+        raise ValueError('Embedding tokenizer unavailable; refusing a whitespace index.')
+    tokenizer = Tokenizer.from_str(original.to_str())
+    tokenizer.no_truncation()
+    tokenizer.no_padding()
+    return tokenizer
+
+
+def _token_offsets(text, tokenizer=None):
+    if tokenizer is None:
+        return [m.span() for m in re.finditer(r'\S+', text)]
+    encoded = tokenizer.encode(text, add_special_tokens=False)
+    offsets = encoded.offsets
+    offsets = [(start, end) for start, end in offsets if end > start]
+    if any(not 0 <= start < end <= len(text) for start, end in offsets):
+        raise ValueError('Invalid tokenizer source offsets.')
+    if any(a[0] > b[0] or a[1] > b[1] for a, b in zip(offsets, offsets[1:])):
+        raise ValueError('Non-monotonic tokenizer source offsets.')
+    if not offsets and getattr(encoded, 'ids', []):
+        raise ValueError('Tokenizer returned no source offsets.')
+    return offsets
+
+
+def windows(text, tokenizer=None, size=180, overlap=30):
+    """Keep original substrings; token overlap is for retrieval only, never new evidence."""
+    if size <= overlap or size > 512 or overlap < 0:
+        raise ValueError('Unsupported retrieval window bounds.')
+    offsets = _token_offsets(text, tokenizer)
+    step = size - overlap
+    for start in range(0, len(offsets), step):
+        end = min(start + size, len(offsets))
+        yield text[offsets[start][0]:offsets[end-1][1]]
+        if end == len(offsets):
             break
 
 
@@ -48,7 +79,12 @@ def build_index(store, model=None, download=False):
     if not rows:
         raise ValueError('Ingest source PDFs before building a dense index.')
     model = model or embedding(str(store.root / 'models'), download)
-    entries = [(r['id'], i, span) for r in rows for i, span in enumerate(windows(r['text']))]
+    tokenizer = window_tokenizer(model)
+    entries = [(r['id'], i, span) for r in rows for i, span in enumerate(windows(r['text'], tokenizer))]
+    indexed_ids = {e[0] for e in entries}
+    tokenless_ids = [r['id'] for r in rows if r['id'] not in indexed_ids]
+    if not entries:
+        raise ValueError('Corpus contains no embedding tokens; previous index retained.')
     # Stage in memory, then publish all vectors and their manifest atomically.
     vectors = list(model.passage_embed([e[2] for e in entries], batch_size=32))
     if len(vectors) != len(entries):
@@ -64,6 +100,9 @@ def build_index(store, model=None, download=False):
         v = v / np.linalg.norm(v)
         payloads.append((eid, index, hashlib.sha256(text.encode()).hexdigest(), v.tobytes()))
     manifest = dict(model=MODEL, dimension=dimension, chunk_version=VERSION,
+                    tokenizer_sha256=hashlib.sha256(tokenizer.to_str().encode()).hexdigest(),
+                    window_tokens=180, overlap_tokens=30, truncation=False,
+                    tokenless_ids=tokenless_ids,
                     corpus_hash=fingerprint(rows), blocks=len(rows), windows=len(entries))
     with store.connect() as c:
         c.executescript(SCHEMA)

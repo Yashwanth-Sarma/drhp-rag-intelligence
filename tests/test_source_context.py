@@ -43,3 +43,8 @@ def test_missing_geometry_is_not_invented(store):
     with store.connect() as c: c.execute('UPDATE evidence SET bbox=NULL WHERE id=?',(blocks[3]['id'],))
     assert source_context(store,blocks[3]['id'])['status']=='geometry_unavailable'
     with pytest.raises(ValueError): source_context(store,'missing')
+
+
+def test_missing_native_layout_does_not_infer_structure_from_text(store):
+    blocks = populate(store)
+    assert source_context(store, blocks[2]['id'])['structure_context']['status'] == 'not_indexed'

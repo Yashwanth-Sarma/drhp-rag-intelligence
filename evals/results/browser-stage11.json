@@ -1,0 +1,9 @@
+{
+  "desktop": true,
+  "mobile": true,
+  "fullTableCandidates": 4,
+  "export": true,
+  "backNavigation": true,
+  "dialogOverflow": false,
+  "errors": []
+}

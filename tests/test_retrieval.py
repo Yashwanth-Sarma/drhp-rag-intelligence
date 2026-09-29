@@ -5,6 +5,11 @@ from finsight.retrieval import build_index, dense_search, fuse, windows
 
 
 class FakeEmbedding:
+    def __init__(self):
+        from tokenizers import Tokenizer, models, pre_tokenizers
+        self.tokenizer = Tokenizer(models.WordLevel({'[UNK]': 0}, unk_token='[UNK]'))
+        self.tokenizer.pre_tokenizer = pre_tokenizers.WhitespaceSplit()
+
     def passage_embed(self, texts, batch_size=32):
         return [self.vector(t) for t in texts]
 
@@ -63,3 +68,44 @@ def test_windows_keep_all_tokens_and_numeric_signs():
     assert all(p in text for p in parts)
     assert parts[0].startswith('0 ') and parts[-1].endswith('(5) 0')
     assert set(text.split()) == set(' '.join(parts).split())
+
+
+def test_windows_use_tokenizer_offsets_when_available():
+    class Encoded:
+        offsets = [(0, 2), (2, 4), (4, 6), (6, 8), (8, 10)]
+
+    class Tokenizer:
+        def encode(self, text, add_special_tokens=False):
+            return Encoded()
+
+    assert list(windows('abcdefghij', Tokenizer(), size=3, overlap=1)) == ['abcdef', 'efghij']
+
+
+def test_window_tokenizer_unwraps_and_does_not_truncate_or_mutate():
+    from types import SimpleNamespace
+    from finsight.retrieval import window_tokenizer
+    from tokenizers import processors
+    backend = FakeEmbedding()
+    backend.tokenizer.post_processor = processors.TemplateProcessing(
+        single='[CLS] $A [SEP]', special_tokens=[('[CLS]', 1), ('[SEP]', 2)])
+    backend.tokenizer.enable_truncation(max_length=12)
+    backend.tokenizer.enable_padding(length=12)
+    tokenizer = window_tokenizer(SimpleNamespace(model=backend))
+    text = ' '.join(str(i) for i in range(700))
+    parts = list(windows(text, tokenizer))
+    assert parts[-1].endswith('699')
+    assert all(len(tokenizer.encode(p, add_special_tokens=False).ids) <= 180 for p in parts)
+    assert backend.tokenizer.truncation['max_length'] == 12
+    assert backend.tokenizer.padding['length'] == 12
+    with pytest.raises(ValueError, match='tokenizer unavailable'):
+        window_tokenizer(object())
+
+
+def test_tokenless_normalized_blocks_are_reported(store):
+    from tokenizers import normalizers
+    model = FakeEmbedding()
+    model.tokenizer.normalizer = normalizers.BertNormalizer()
+    _, empty = seed(store, 'Alpha', None, '\x01')
+    seed(store, 'Alpha', None, 'supplier')
+    manifest = build_index(store, model)
+    assert manifest['tokenless_ids'] == [empty]
